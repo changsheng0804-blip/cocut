@@ -12,7 +12,7 @@ def save(doc):
 def tts(body, voice='zh-CN-YunxiNeural'):
     voice = body.get('voice') or voice; rate = body.get('rate') or '-8%'; pitch = body.get('pitch') or '+0Hz'
     import edge_tts
-    bid = ''.join(c for c in str(body.get('id', 'x')) if c.isalnum() or c in "-_'")[:40]; text = str(body.get('text', '')).strip()
+    bid = ''.join(c for c in str(body.get('id', 'x')) if c.isalnum() or c in "-_'")[:40]; text = str(body.get('say') or body.get('text', '')).strip()  # say：配音用的替换文本（如「行」→「航」），字幕仍用 text
     if not text: return {'error': 'empty text'}, 400
     rel = 'vo/%s_%s.mp3' % (bid, time.strftime('%H%M%S')); out = os.path.join(LIVE, rel); words = []
     async def go():
