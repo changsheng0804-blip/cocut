@@ -1,0 +1,237 @@
+{
+ "answers": {
+  "S1_0a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_1a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_1b": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S1_2a": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "计数器 1,000,000"
+   ],
+   "bad": true
+  },
+  "S1_2b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_2c": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "半圆形速度仪表盘（画成圆形钟表）",
+    "指针推到右侧极限",
+    "淡紫弧形光轨与火花"
+   ],
+   "bad": true
+  },
+  "S1_2d": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_2e": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_3a": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "Twin 拿放大镜审视斗拱",
+    "铅笔线框生长"
+   ],
+   "bad": true
+  },
+  "S1_3b": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "Twin 挥旗引导"
+   ],
+   "bad": true
+  },
+  "S1_3c": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "双足人形机器人（画成机械臂）",
+    "Twin 牵姿态连线"
+   ],
+   "bad": true
+  },
+  "S1_4a": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "键盘与红色按键（键帽带文字）"
+   ],
+   "bad": true
+  },
+  "S1_4b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_5a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_5b": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "理顺的代码蓝图",
+    "玻璃管里打哈欠的 Twin"
+   ],
+   "bad": true
+  },
+  "S1_5c": {
+   "text": false,
+   "swap": true,
+   "missing": [
+    "暗夜紫黑背景",
+    "中央淡紫星芒光晕"
+   ],
+   "bad": true
+  },
+  "S2_0a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_1a": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_1b": {
+   "text": false,
+   "swap": true,
+   "missing": [
+    "按灭台灯",
+    "空办公椅",
+    "Twin 苏醒亮起"
+   ],
+   "bad": true
+  },
+  "S2_2a": {
+   "text": false,
+   "swap": true,
+   "missing": [
+    "发光纸带",
+    "计数器 1,000,000"
+   ],
+   "bad": true
+  },
+  "S2_2b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_2c": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_2d": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_2e": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_3a": {
+   "text": false,
+   "swap": true,
+   "missing": [
+    "古寺宝塔",
+    "Twin 放大镜"
+   ],
+   "bad": true
+  },
+  "S2_3b": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "Twin 挥旗引导（画成小人挥旗）",
+    "淡紫条纹赛车"
+   ],
+   "bad": true
+  },
+  "S2_3c": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_4a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_4b": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_5a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_5b": {
+   "text": false,
+   "swap": true,
+   "missing": [
+    "清晨书桌上的成果陈列",
+    "玻璃管里睡去的 Twin"
+   ],
+   "bad": true
+  },
+  "S2_5c": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  }
+ },
+ "timing": {
+  "seconds": 70
+ }
+}
