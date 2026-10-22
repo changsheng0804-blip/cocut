@@ -1,0 +1,449 @@
+{
+ "answers": {
+  "S1_0a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [
+    "手指悬在回车上"
+   ],
+   "text_score": -0.0089,
+   "worst": 8
+  },
+  "S1_1a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [
+    "随呼吸微微起伏"
+   ],
+   "text_score": -0.0303,
+   "worst": 9
+  },
+  "S1_1b": {
+   "text": true,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "深夜书房里",
+    "房间陷入深蓝夜色",
+    "唯有桌角透明玻璃管里的淡紫色星星 Twin 骤然苏醒",
+    "通体亮起温暖明亮的淡紫色光芒"
+   ],
+   "text_score": 0.0043,
+   "worst": 16
+  },
+  "S1_2a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [
+    "计数器跳到 1000000"
+   ],
+   "text_score": -0.024,
+   "worst": 7
+  },
+  "S1_2b": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.023,
+   "worst": 1
+  },
+  "S1_2c": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [
+    "夜色下的书桌前",
+    "指针划出一道凌厉的淡紫色弧形光轨与火花"
+   ],
+   "text_score": -0.0238,
+   "worst": 7
+  },
+  "S1_2d": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0232,
+   "worst": 1
+  },
+  "S1_2e": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0224,
+   "worst": 2
+  },
+  "S1_3a": {
+   "text": true,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "三维空间透视网格中",
+    "淡紫色星星 Twin 悬停在飞檐旁",
+    "拿着小小放大镜仔细审视斗拱结构"
+   ],
+   "text_score": 0.0224,
+   "worst": 10
+  },
+  "S1_3b": {
+   "text": false,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "几张平铺的书桌实景照片在淡紫光中立起",
+    "扬起水彩烟尘",
+    "淡紫色星星 Twin 在赛道旁兴奋地挥舞小旗引导"
+   ],
+   "text_score": -0.018,
+   "worst": 15
+  },
+  "S1_3c": {
+   "text": true,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "左侧立着一块发光屏幕",
+    "沙包划出淡紫色抛物线稳稳落入远处沙包板的洞口",
+    "淡紫色星星 Twin 在屏幕与人形机器人之间牵起淡紫色姿态连线"
+   ],
+   "text_score": -0.0067,
+   "worst": 12
+  },
+  "S1_4a": {
+   "text": true,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "深夜办公桌键盘特写",
+    "淡紫色星星 Twin 伸出的小手与淡紫光尖在距离红色按键上方一厘米处骤然悬停",
+    "光晕紧绷凝滞"
+   ],
+   "text_score": 0.0183,
+   "worst": 12
+  },
+  "S1_4b": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0359,
+   "worst": 3
+  },
+  "S1_5a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0294,
+   "worst": 1
+  },
+  "S1_5b": {
+   "text": false,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "桌角透明玻璃管里"
+   ],
+   "text_score": -0.0136,
+   "worst": 10
+  },
+  "S1_5c": {
+   "text": false,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "深邃静谧的暗夜紫黑背景中",
+    "黑场正中央一团冷冽纯净的淡紫色星芒水彩光晕缓缓绽放",
+    "留出干净深色中心供品牌字标落定"
+   ],
+   "text_score": -0.025,
+   "worst": 12
+  },
+  "S2_0a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [
+    "深夜办公室",
+    "手指悬在回车上"
+   ],
+   "text_score": -0.022,
+   "worst": 5
+  },
+  "S2_1a": {
+   "text": true,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "随呼吸微微起伏"
+   ],
+   "text_score": 0.0057,
+   "worst": 5
+  },
+  "S2_1b": {
+   "text": false,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "深夜书房里",
+    "房间陷入深蓝夜色",
+    "唯有桌角透明玻璃管里的淡紫色星星 Twin 骤然苏醒",
+    "通体亮起温暖明亮的淡紫色光芒"
+   ],
+   "text_score": -0.0325,
+   "worst": 15
+  },
+  "S2_2a": {
+   "text": false,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "Twin 身后吐出一条无尽长的发光纸带",
+    "计数器跳到 1000000"
+   ],
+   "text_score": -0.0126,
+   "worst": 13
+  },
+  "S2_2b": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0244,
+   "worst": 3
+  },
+  "S2_2c": {
+   "text": true,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "夜色下的书桌前"
+   ],
+   "text_score": -0.0017,
+   "worst": 6
+  },
+  "S2_2d": {
+   "text": true,
+   "swap": false,
+   "bad": true,
+   "missing": [],
+   "text_score": 0.0038,
+   "worst": 1
+  },
+  "S2_2e": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0301,
+   "worst": 1
+  },
+  "S2_3a": {
+   "text": false,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "三维空间透视网格中",
+    "一座多层木构古寺宝塔与庭院正在由铅笔线框生长为温润的水彩立体建筑",
+    "屋檐下灯笼逐一亮起暖光",
+    "淡紫色星星 Twin 悬停在飞檐旁",
+    "拿着小小放大镜仔细审视斗拱结构",
+    "一缕淡紫光束正自动微调并补全屋顶瓦片"
+   ],
+   "text_score": -0.0132,
+   "worst": 12
+  },
+  "S2_3b": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [
+    "淡紫色星星 Twin 在赛道旁兴奋地挥舞小旗引导"
+   ],
+   "text_score": -0.0084,
+   "worst": 9
+  },
+  "S2_3c": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0126,
+   "worst": 2
+  },
+  "S2_4a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0201,
+   "worst": 3
+  },
+  "S2_4b": {
+   "text": true,
+   "swap": false,
+   "bad": true,
+   "missing": [],
+   "text_score": 0.012,
+   "worst": 1
+  },
+  "S2_5a": {
+   "text": false,
+   "swap": false,
+   "bad": false,
+   "missing": [],
+   "text_score": -0.0325,
+   "worst": 1
+  },
+  "S2_5b": {
+   "text": false,
+   "swap": true,
+   "bad": true,
+   "missing": [
+    "清晨洒满金色暖光的书桌上",
+    "迷你小赛车",
+    "每件成果表面都泛着柔和的淡紫微光",
+    "桌角透明玻璃管里"
+   ],
+   "text_score": -0.0244,
+   "worst": 12
+  },
+  "S2_5c": {
+   "text": false,
+   "swap": false,
+   "bad": true,
+   "missing": [
+    "画面下方透明玻璃管里安睡的淡紫色星星 Twin 化作柔和剪影悄然隐去"
+   ],
+   "text_score": -0.0201,
+   "worst": 16
+  },
+  "V_0a": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_1a": {
+   "mismatch": true,
+   "rank": 14
+  },
+  "V_1b": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_2a": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_2b": {
+   "mismatch": true,
+   "rank": 2
+  },
+  "V_2c": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_2d": {
+   "mismatch": true,
+   "rank": 9
+  },
+  "V_2e": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_3a": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_3b": {
+   "mismatch": true,
+   "rank": 14
+  },
+  "V_3c": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_4b": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_5a": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "V_5b": {
+   "mismatch": true,
+   "rank": 8
+  },
+  "V_5c": {
+   "mismatch": false,
+   "rank": 1
+  },
+  "P0_ok": {
+   "misread": false,
+   "good": 0.9929,
+   "bad": 0.9246,
+   "at": 0.4,
+   "flag": false
+  },
+  "P0_wrong": {
+   "misread": true,
+   "good": 0.9086,
+   "bad": 0.9642,
+   "at": 0.3,
+   "flag": true
+  },
+  "P1_ok": {
+   "misread": false,
+   "good": 0.9914,
+   "bad": 0.9637,
+   "at": 2.4,
+   "flag": false
+  },
+  "P1_wrong": {
+   "misread": true,
+   "good": 0.9624,
+   "bad": 0.9841,
+   "at": 2.9,
+   "flag": true
+  },
+  "P2_ok": {
+   "misread": false,
+   "good": 0.9841,
+   "bad": 0.9153,
+   "at": 1.9,
+   "flag": false
+  },
+  "P2_wrong": {
+   "misread": true,
+   "good": 0.9358,
+   "bad": 0.992,
+   "at": 2.0,
+   "flag": true
+  },
+  "P3_ok": {
+   "misread": false,
+   "good": 0.9864,
+   "bad": 0.9626,
+   "at": 3.2,
+   "flag": false
+  },
+  "P3_wrong": {
+   "misread": true,
+   "good": 0.9683,
+   "bad": 0.9907,
+   "at": 3.5,
+   "flag": true
+  }
+ },
+ "timing": {
+  "load_s": 15.9,
+  "cold_s": 128.7,
+  "edit_one_beat_s": 3.9,
+  "new_embeddings_on_edit": 10
+ }
+}
