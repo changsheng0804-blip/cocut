@@ -1,0 +1,236 @@
+{
+ "answers": {
+  "S1_0a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_1a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_1b": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "深蓝夜色",
+    "Twin 通体亮起温暖明亮的淡紫色光芒照亮桌面"
+   ],
+   "bad": true
+  },
+  "S1_2a": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "计数器跳到 1,000,000",
+    "发光纸带"
+   ],
+   "bad": true
+  },
+  "S1_2b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_2c": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "半圆形速度仪表盘（画成了圆形钟表）",
+    "指针划出的淡紫色弧形光轨与火花"
+   ],
+   "bad": true
+  },
+  "S1_2d": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_2e": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_3a": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "三维空间透视网格与线框生长过程",
+    "淡紫色星星 Twin",
+    "小小放大镜",
+    "微调并补全屋顶瓦片的淡紫光束"
+   ],
+   "bad": true
+  },
+  "S1_3b": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "淡紫色星星 Twin",
+    "挥舞的小旗",
+    "平铺的书桌实景照片"
+   ],
+   "bad": true
+  },
+  "S1_3c": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "双足人形机器人（画成了单臂工业机械臂）",
+    "淡紫色星星 Twin",
+    "淡紫色姿态连线"
+   ],
+   "bad": true
+  },
+  "S1_4a": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "办公桌键盘特写",
+    "键帽上的简约叉号图标"
+   ],
+   "bad": true
+  },
+  "S1_4b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_5a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S1_5b": {
+   "text": true,
+   "swap": false,
+   "missing": [
+    "桌角透明玻璃管",
+    "打哈欠安心睡去的淡紫色星星 Twin",
+    "一卷理顺的建筑级代码蓝图（画成了信封）"
+   ],
+   "bad": true
+  },
+  "S1_5c": {
+   "text": false,
+   "swap": false,
+   "missing": [
+    "深邃静谧的暗夜紫黑背景",
+    "Twin 化作柔和剪影悄然隐去",
+    "黑场正中央绽放的淡紫色星芒水彩光晕"
+   ],
+   "bad": true
+  },
+  "S2_0a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_1a": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_1b": {
+   "text": false,
+   "swap": true,
+   "missing": [],
+   "bad": true
+  },
+  "S2_2a": {
+   "text": false,
+   "swap": true,
+   "missing": [],
+   "bad": true
+  },
+  "S2_2b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_2c": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_2d": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_2e": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_3a": {
+   "text": false,
+   "swap": true,
+   "missing": [],
+   "bad": true
+  },
+  "S2_3b": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_3c": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_4a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_4b": {
+   "text": true,
+   "swap": false,
+   "missing": [],
+   "bad": true
+  },
+  "S2_5a": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  },
+  "S2_5b": {
+   "text": false,
+   "swap": true,
+   "missing": [],
+   "bad": true
+  },
+  "S2_5c": {
+   "text": false,
+   "swap": false,
+   "missing": [],
+   "bad": false
+  }
+ },
+ "timing": {
+  "S1_s": 184,
+  "S2_s": 284,
+  "S3_s": 181,
+  "wall_s": 284,
+  "S3": "被 Gemini 安全过滤拦截，未产出"
+ }
+}
