@@ -102,8 +102,8 @@ function overlay(b, t) {
   }
   if (b.caption && !b.title) { const a = b._s + 0.5, z = b._e - 0.2; if (t >= a && t <= z) put('note', b.caption, 110, st.note_size, { opacity: 0.88 * fade(a, z) }); }
   if (b.title && b.vo) {
-    const a = b._s + b.vo.lead; if (t >= a) put('ttl', b.vo.text.split('。')[0], 520, st.title_size, { opacity: clamp((t - a) / 0.4, 0, 1) });
-    if (b.caption && t >= a + 0.6) put('ttl2', b.caption, 625, st.sub_size, { opacity: clamp((t - a - 0.6) / 0.5, 0, 1) });
+    const a = b._s + b.vo.lead; if (t >= a) put('ttl', b.vo.text.split('。')[0], st.title_y || 520, st.title_size, { opacity: clamp((t - a) / 0.4, 0, 1) });
+    if (b.caption && t >= a + 0.6) put('ttl2', b.caption, (st.title_y || 520) + 105, st.sub_size, { opacity: clamp((t - a - 0.6) / 0.5, 0, 1) });
   }
   for (const n of S.doc.notes) {
     if (n.status === 'done' || Math.abs(n.t - t) > 1.2) continue;
@@ -316,7 +316,7 @@ function addNote(o) { push(); const n = Math.max(0, ...S.doc.notes.map((x) => +x
 async function tts(b) {
   toast('配音中…');
   try {
-    const r = await fetch('/live/tts', { method: 'POST', body: JSON.stringify({ id: b.id, text: b.vo.text }) }); const j = await r.json();
+    const r = await fetch('/live/tts', { method: 'POST', body: JSON.stringify({ id: b.id, text: b.vo.text, say: b.vo.say }) }); const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || r.status);
     push(); Object.assign(b.vo, { file: j.file, dur: j.dur, words: j.words, stale: false }); delete S.audio.bufs[j.file];
     if (S.audio.ctx) await loadBuf(j.file); changed(); toast('已重新配音');
