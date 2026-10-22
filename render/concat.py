@@ -80,12 +80,12 @@ for n in plan['notes']:
                             'style': cap(24, 300, content=n['text'], opacity=0.85)})
         C('clip_update', {'path': PROJ, 'clipId': r['createdId'], 'patch': {'fadeIn': 0.3, 'fadeOut': 0.3}})
 tc = plan['title_card']
-r = C('title_add', {'path': PROJ, 'start': tc['start'], 'duration': END - tc['start'], 'offsetY': -0.02, 'above': True,
+r = C('title_add', {'path': PROJ, 'start': tc['start'], 'duration': END - tc['start'], 'offsetY': (plan['style'].get('title_y', 520) - 540) / 1080, 'above': True,
                     'style': cap(80, 500, content=tc['text'], tracking=0.003)})
 C('clip_update', {'path': PROJ, 'clipId': r['createdId'], 'patch': {'fadeIn': 0.4}})
 sub = next((n for n in plan['notes'] if n['kind'] == 'title'), None)
 if sub:
-    r = C('title_add', {'path': PROJ, 'start': tc['start'] + 0.6, 'duration': END - tc['start'] - 0.6, 'offsetY': 0.08, 'above': True,
+    r = C('title_add', {'path': PROJ, 'start': tc['start'] + 0.6, 'duration': END - tc['start'] - 0.6, 'offsetY': (plan['style'].get('title_y', 520) + 105 - 540) / 1080, 'above': True,
                         'style': cap(34, 300, content=sub['text'])})
     C('clip_update', {'path': PROJ, 'clipId': r['createdId'], 'patch': {'fadeIn': 0.5}})
 C('project_save', {'path': PROJ})
