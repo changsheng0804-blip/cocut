@@ -1,0 +1,757 @@
+{
+ "items": [
+  {
+   "set": "S1",
+   "id": "S1_0a",
+   "beat": "0a",
+   "image": "img/S1_0a.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_1a",
+   "beat": "1a",
+   "image": "img/S1_1a.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_1b",
+   "beat": "1b",
+   "image": "img/S1_1b.jpg",
+   "label": {
+    "text": true,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_2a",
+   "beat": "2a",
+   "image": "img/S1_2a.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_2b",
+   "beat": "2b",
+   "image": "img/S1_2b.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_2c",
+   "beat": "2c",
+   "image": "img/S1_2c.jpg",
+   "label": {
+    "text": false,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_2d",
+   "beat": "2d",
+   "image": "img/S1_2d.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_2e",
+   "beat": "2e",
+   "image": "img/S1_2e.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_3a",
+   "beat": "3a",
+   "image": "img/S1_3a.jpg",
+   "label": {
+    "text": true,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_3b",
+   "beat": "3b",
+   "image": "img/S1_3b.jpg",
+   "label": {
+    "text": false,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_3c",
+   "beat": "3c",
+   "image": "img/S1_3c.jpg",
+   "label": {
+    "text": false,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_4a",
+   "beat": "4a",
+   "image": "img/S1_4a.jpg",
+   "label": {
+    "text": true,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_4b",
+   "beat": "4b",
+   "image": "img/S1_4b.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_5a",
+   "beat": "5a",
+   "image": "img/S1_5a.jpg",
+   "label": {
+    "text": false,
+    "bad": false,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_5b",
+   "beat": "5b",
+   "image": "img/S1_5b.jpg",
+   "label": {
+    "text": false,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S1",
+   "id": "S1_5c",
+   "beat": "5c",
+   "image": "img/S1_5c.jpg",
+   "label": {
+    "text": false,
+    "bad": true,
+    "swap": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_0a",
+   "beat": "0a",
+   "image": "img/S2_0a.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": true,
+    "miss": true
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_1a",
+   "beat": "1a",
+   "image": "img/S2_1a.jpg",
+   "label": {
+    "text": true,
+    "swap": false,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_1b",
+   "beat": "1b",
+   "image": "img/S2_1b.jpg",
+   "label": {
+    "text": false,
+    "swap": true,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_2a",
+   "beat": "2a",
+   "image": "img/S2_2a.jpg",
+   "label": {
+    "text": false,
+    "swap": true,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_2b",
+   "beat": "2b",
+   "image": "img/S2_2b.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": false,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_2c",
+   "beat": "2c",
+   "image": "img/S2_2c.jpg",
+   "label": {
+    "text": true,
+    "swap": false,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_2d",
+   "beat": "2d",
+   "image": "img/S2_2d.jpg",
+   "label": {
+    "text": true,
+    "swap": false,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_2e",
+   "beat": "2e",
+   "image": "img/S2_2e.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": false,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_3a",
+   "beat": "3a",
+   "image": "img/S2_3a.jpg",
+   "label": {
+    "text": false,
+    "swap": true,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_3b",
+   "beat": "3b",
+   "image": "img/S2_3b.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": true,
+    "miss": true
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_3c",
+   "beat": "3c",
+   "image": "img/S2_3c.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": false,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_4a",
+   "beat": "4a",
+   "image": "img/S2_4a.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": false,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_4b",
+   "beat": "4b",
+   "image": "img/S2_4b.jpg",
+   "label": {
+    "text": true,
+    "swap": false,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_5a",
+   "beat": "5a",
+   "image": "img/S2_5a.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": false,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_5b",
+   "beat": "5b",
+   "image": "img/S2_5b.jpg",
+   "label": {
+    "text": false,
+    "swap": true,
+    "bad": true,
+    "miss": false
+   }
+  },
+  {
+   "set": "S2",
+   "id": "S2_5c",
+   "beat": "5c",
+   "image": "img/S2_5c.jpg",
+   "label": {
+    "text": false,
+    "swap": false,
+    "bad": true,
+    "miss": true
+   }
+  }
+ ],
+ "audio": [
+  {
+   "set": "S3",
+   "id": "P0_ok",
+   "beat": "2b",
+   "audio": "aud/P0_ok.mp3",
+   "text": "六百万行老代码，几周就拆解重构。",
+   "poly": {
+    "char": "行",
+    "pinyin": "háng",
+    "good": "航",
+    "bad": "形"
+   },
+   "label": {
+    "misread": false,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P0_wrong",
+   "beat": "2b",
+   "audio": "aud/P0_wrong.mp3",
+   "text": "六百万行老代码，几周就拆解重构。",
+   "poly": {
+    "char": "行",
+    "pinyin": "háng",
+    "good": "航",
+    "bad": "形"
+   },
+   "label": {
+    "misread": true,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P1_ok",
+   "beat": "2b",
+   "audio": "aud/P1_ok.mp3",
+   "text": "六百万行老代码，几周就拆解重构。",
+   "poly": {
+    "char": "重",
+    "pinyin": "chóng",
+    "good": "虫",
+    "bad": "众"
+   },
+   "label": {
+    "misread": false,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P1_wrong",
+   "beat": "2b",
+   "audio": "aud/P1_wrong.mp3",
+   "text": "六百万行老代码，几周就拆解重构。",
+   "poly": {
+    "char": "重",
+    "pinyin": "chóng",
+    "good": "虫",
+    "bad": "众"
+   },
+   "label": {
+    "misread": true,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P2_ok",
+   "beat": "5a",
+   "audio": "aud/P2_ok.mp3",
+   "text": "把通宵留给它，把清晨还给自己。",
+   "poly": {
+    "char": "还",
+    "pinyin": "huán",
+    "good": "环",
+    "bad": "孩"
+   },
+   "label": {
+    "misread": false,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P2_wrong",
+   "beat": "5a",
+   "audio": "aud/P2_wrong.mp3",
+   "text": "把通宵留给它，把清晨还给自己。",
+   "poly": {
+    "char": "还",
+    "pinyin": "huán",
+    "good": "环",
+    "bad": "孩"
+   },
+   "label": {
+    "misread": true,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P3_ok",
+   "beat": "3c",
+   "audio": "aud/P3_ok.mp3",
+   "text": "看段视频，几小时教会机器人七投七中。",
+   "poly": {
+    "char": "中",
+    "pinyin": "zhòng",
+    "good": "众",
+    "bad": "钟"
+   },
+   "label": {
+    "misread": false,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "P3_wrong",
+   "beat": "3c",
+   "audio": "aud/P3_wrong.mp3",
+   "text": "看段视频，几小时教会机器人七投七中。",
+   "poly": {
+    "char": "中",
+    "pinyin": "zhòng",
+    "good": "众",
+    "bad": "钟"
+   },
+   "label": {
+    "misread": true,
+    "mismatch": false
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_0a",
+   "beat": "0a",
+   "audio": "aud/V_0a.mp3",
+   "text": "有些硬骨头，得熬上好几个月。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_1a",
+   "beat": "1a",
+   "audio": "aud/V_1a.mp3",
+   "text": "谷歌最新模型叫 Argon，意思是：懒。",
+   "label": {
+    "mismatch": true,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_1b",
+   "beat": "1b",
+   "audio": "aud/V_1b.mp3",
+   "text": "不是它懒。是有它，你能偷懒。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_2a",
+   "beat": "2a",
+   "audio": "aud/V_2a.mp3",
+   "text": "一口气输出百万 token，深想到底。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_2b",
+   "beat": "2b",
+   "audio": "aud/V_2b.mp3",
+   "text": "六百万行老代码，几周就拆解重构。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_2c",
+   "beat": "2c",
+   "audio": "aud/V_2c.mp3",
+   "text": "底层优化几天干完，提速近三倍。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_2d",
+   "beat": "2d",
+   "audio": "aud/V_2d.mp3",
+   "text": "连隐秘的致命漏洞，也顺手焊死。",
+   "label": {
+    "mismatch": true,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_2e",
+   "beat": "2e",
+   "audio": "aud/V_2e.mp3",
+   "text": "为六十年的聚变难题找到新反例，揪出罕见病基因，几小时设计出新酶。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_3a",
+   "beat": "3a",
+   "audio": "aud/V_3a.mp3",
+   "text": "它还懂空间。边建边改，搭出整座古寺。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_3b",
+   "beat": "3b",
+   "audio": "aud/V_3b.mp3",
+   "text": "几张书桌照，变成能玩的赛车游戏。",
+   "label": {
+    "mismatch": true,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_3c",
+   "beat": "3c",
+   "audio": "aud/V_3c.mp3",
+   "text": "看段视频，几小时教会机器人七投七中。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_4b",
+   "beat": "4b",
+   "audio": "aud/V_4b.mp3",
+   "text": "但它从不越界。危险操作，先等你点头。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_5a",
+   "beat": "5a",
+   "audio": "aud/V_5a.mp3",
+   "text": "把通宵留给它，把清晨还给自己。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_5b",
+   "beat": "5b",
+   "audio": "aud/V_5b.mp3",
+   "text": "最难的活，它死磕。你——尽管懒。",
+   "label": {
+    "mismatch": true,
+    "misread": null
+   }
+  },
+  {
+   "set": "S3",
+   "id": "V_5c",
+   "beat": "5c",
+   "audio": "aud/V_5c.mp3",
+   "text": "Gemini 4 Argon。……为最难的事而生。",
+   "label": {
+    "mismatch": false,
+    "misread": null
+   }
+  }
+ ],
+ "beats": {
+  "0a": {
+   "what": "深夜办公室，人对着只有一行空输入框的屏幕，手指悬在回车上，桌角玻璃管里 Twin 在睡",
+   "vo": "有些硬骨头，得熬上好几个月。",
+   "caption": null
+  },
+  "1a": {
+   "what": "玻璃管里打盹的 Twin，随呼吸微微起伏",
+   "vo": "谷歌最新模型叫 Argon，意思是：懒。",
+   "caption": "Argon（氩）：源自希腊语“懒惰”"
+  },
+  "1b": {
+   "what": "深夜书房里，一只手刚按灭桌面台灯，另一侧空办公椅被轻轻推回桌下；房间陷入深蓝夜色，唯有桌角透明玻璃管里的淡紫色星星 Twin 骤然苏醒，通体亮起温暖明亮的淡紫色光芒，照亮幽暗的桌面。",
+   "vo": "不是它懒。是有它，你能偷懒。",
+   "caption": null
+  },
+  "2a": {
+   "what": "Twin 身后吐出一条无尽长的发光纸带，绕出窗外直达天边，计数器跳到 1,000,000",
+   "vo": "一口气输出百万 token，深想到底。",
+   "caption": "输出上限 100 万 token（此前 6.4 万）"
+  },
+  "2b": {
+   "what": "由代码堆成的巨大城市里，Twin 钻进去把一整片缠成一团的老街区拆开、理顺",
+   "vo": "六百万行老代码，几周就拆解重构。",
+   "caption": "Chromium 架构重构：数月压至数周"
+  },
+  "2c": {
+   "what": "夜色下的书桌前，立着一个大型半圆形速度仪表盘（仅有刻度线，无数字文字），淡紫色星星 Twin 鼓起腮帮子，双手发力将仪表盘指针往右侧极限刻度猛推到底，指针划出一道凌厉的淡紫色弧形光轨与火花。",
+   "vo": "底层优化几天干完，提速近三倍。",
+   "caption": "Gemma 4 提速 2.85 倍，零质量损失"
+  },
+  "2d": {
+   "what": "医院档案库大门上的细裂缝，Twin 用紫光精准照亮并把它焊死",
+   "vo": "连隐秘的致命漏洞，也顺手焊死。",
+   "caption": "自主修补漏洞，护住数十万病历"
+  },
+  "2e": {
+   "what": "三块面板环绕亮起：核聚变仿星器、发光的错位 DNA、紫外下发光的烧瓶",
+   "vo": "为六十年的聚变难题找到新反例，揪出罕见病基因，几小时设计出新酶。",
+   "caption": "Grad 猜想新反例 · 罕见病基因 · 新酶"
+  },
+  "3a": {
+   "what": "三维空间透视网格中，一座多层木构古寺宝塔与庭院正在由铅笔线框生长为温润的水彩立体建筑，屋檐下灯笼逐一亮起暖光；淡紫色星星 Twin 悬停在飞檐旁，拿着小小放大镜仔细审视斗拱结构，一缕淡紫光束正自动微调并补全屋顶瓦片。",
+   "vo": "它还懂空间。边建边改，搭出整座古寺。",
+   "caption": "多智能体视觉自检 3D 建模"
+  },
+  "3b": {
+   "what": "几张平铺的书桌实景照片在淡紫光中立起、延伸融合成真实的书桌三维微缩赛场，水杯、笔筒与订书机化作赛道弯道障碍；一辆涂有淡紫条纹的迷你小赛车正绕过水杯漂移疾驰、扬起水彩烟尘，淡紫色星星 Twin 在赛道旁兴奋地挥舞小旗引导。",
+   "vo": "几张书桌照，变成能玩的赛车游戏。",
+   "caption": "建模·碰撞·引擎声全自动，AI Studio 可玩"
+  },
+  "3c": {
+   "what": "左侧立着一块发光屏幕，屏幕画面里一个人正俯身投出沙包；右侧一台双足人形机器人同步屈膝、摆臂，复刻出流畅的全身关节投掷动作，沙包划出淡紫色抛物线稳稳落入远处沙包板的洞口，淡紫色星星 Twin 在屏幕与人形机器人之间牵起淡紫色姿态连线。",
+   "vo": "看段视频，几小时教会机器人七投七中。",
+   "caption": "ERQA 具身推理 87%，数周压至数小时"
+  },
+  "4a": {
+   "what": "深夜办公桌键盘特写，一颗醒目的红色危险按键（键帽仅画简约叉号图标，无文字）近在咫尺，淡紫色星星 Twin 伸出的小手与淡紫光尖在距离红色按键上方一厘米处骤然悬停，光晕紧绷凝滞。",
+   "vo": null,
+   "caption": null
+  },
+  "4b": {
+   "what": "空椅子前的 Twin 转过身，头顶亮起一个温和的问号，静静等待",
+   "vo": "但它从不越界。危险操作，先等你点头。",
+   "caption": "不可逆操作前，先等你确认"
+  },
+  "5a": {
+   "what": "窗外从深蓝转成清晨暖光，一只手把热咖啡放到桌上",
+   "vo": "把通宵留给它，把清晨还给自己。",
+   "caption": null
+  },
+  "5b": {
+   "what": "清晨洒满金色暖光的书桌上，整齐排列着微缩古寺宝塔、迷你小赛车、沙包板与一卷理顺的建筑级代码蓝图（纯图形线条，无文字），每件成果表面都泛着柔和的淡紫微光；桌角透明玻璃管里，忙完一整夜的淡紫色星星 Twin 满足地打着哈欠，蜷成一团安心睡去。",
+   "vo": "最难的活，它死磕。你——尽管懒。",
+   "caption": null
+  },
+  "5c": {
+   "what": "深邃静谧的暗夜紫黑背景中，画面下方透明玻璃管里安睡的淡紫色星星 Twin 化作柔和剪影悄然隐去，黑场正中央一团冷冽纯净的淡紫色星芒水彩光晕缓缓绽放，留出干净深色中心供品牌字标落定。",
+   "vo": "Gemini 4 Argon。……为最难的事而生。",
+   "caption": "为最难的事而生"
+  }
+ }
+}
