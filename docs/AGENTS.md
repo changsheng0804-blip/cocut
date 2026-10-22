@@ -8,6 +8,17 @@
 3. **改内容**：只改你负责的维度，改拍点字段（`cli.py set <拍点> <字段> <值>` 或整份 `POST /api/save`）。改旁白文字后要重配这一句（`POST /api/tts`），用返回的 file/dur/words 更新该拍的 vo。
 4. **回复意见**：改完把对应 note 的 status 设为 done，写 reply 和 by_fix。
 
+## 领复核单（点名复核）
+反射层每次改动后自动体检，把可疑处开成「复核单」：哪张图、哪条配音、问哪几个是非题。你只需要答这几题。
+1. 领单：`GET /api/review?by=<你的名字>` 的 `open`，或 `cli.py review list --by <你的名字>`。
+   每张单有 `image`、`audio`（片子目录里的相对路径，服务端可在 `/live/<路径>` 取到）、`what`、`text` 和 `asks`。
+2. 答题：每题只答 `yes` / `no` / `unsure`，键是 `asks[].i`。
+   `POST /api/review/answer {"ticket": "3b-8e6abd7068", "by": "<你的名字>", "answers": {"0": "no"}, "note": "可选的一句理由"}`
+   或 `cli.py review answer 3b-8e6abd7068 --by <你的名字> '{"0":"no"}'`。
+3. 只看点名的那一处，不评价别的；看不到/听不到就答 `unsure`，不要猜。
+4. 单子过期（409）说明素材或文案已改，等新体检出新单。
+想要更全面的意见，照旧用 `/api/note` 留言；复核单只做是非判断。
+
 ## 规矩
 - 先对齐 `one_thing`，再动手。
 - 不要整片重写来解决一处问题；脏哪段改哪段。
