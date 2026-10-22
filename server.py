@@ -5,7 +5,7 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote
 ROOT = os.path.dirname(os.path.abspath(__file__)); APP = os.path.join(ROOT, 'app')
 FILM = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'examples', 'lan'))
-os.environ['COCUT_FILM'] = FILM; sys.path.insert(0, os.path.join(ROOT, 'cocut')); import api
+os.environ['COCUT_FILM'] = FILM; sys.path.insert(0, os.path.join(ROOT, 'cocut')); import api, review
 JOBS = {}
 
 def doc(): return json.load(open(os.path.join(FILM, 'doc.json'), encoding='utf-8'))
@@ -35,6 +35,9 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path); p = unquote(u.path)
         if p == '/api/doc': return self._json(doc())
         if p == '/api/plan': return self._json(api.to_plan(doc()))
+        if p == '/api/review':                          # 每拍颜色 + 待复核的单；?by=gemini 去掉它答过的
+            from urllib.parse import parse_qs; q = parse_qs(u.query); by = (q.get('by') or [None])[0]
+            return self._json(dict(status=review.status(FILM), open=review.list_open(FILM, by, bool(q.get('second')))))
         if p.startswith('/api/job/'):
             j = JOBS.get(p.split('/')[-1]); return self._json(j and dict(running=j['p'].poll() is None, rc=j['p'].poll(), log=open(j['log']).read()[-3000:]) or {'error': 'no job'})
         rel = p.lstrip('/').removeprefix('live/') or 'index.html'
@@ -55,6 +58,12 @@ class H(BaseHTTPRequestHandler):
             try: return self._json(*api.tts(body))
             except Exception as e: return self._json({'error': str(e)}, 500)
         if p == '/api/note': return self._json(*add_note(body))
+        if p == '/api/review/open':                     # {report?}：缺省读 .cocut/reflex.json
+            try: return self._json(review.open_tickets(FILM, body.get('report')))
+            except FileNotFoundError: return self._json({'error': '还没有体检报告：先跑 tools/reflex.py 或 cli review open --run'}, 409)
+        if p == '/api/review/answer':                   # {ticket, by, answers:{"0":"yes"}, note?}
+            if not body.get('ticket') or not body.get('by'): return self._json({'error': 'ticket and by required'}, 400)
+            return self._json(*review.answer(FILM, body['ticket'], body['by'], body.get('answers') or {}, body.get('note')))
         if p in ('/live/export', '/api/export'):
             jid = time.strftime('export-%H%M%S'); log = os.path.join(FILM, 'job_%s.log' % jid)
             cmd = [sys.executable, os.path.join(ROOT, 'render', 'concat.py')] + (['--final'] if body.get('final', True) else [body.get('ver', 'review')])
