@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>《懒》动态预览 · 审片室</title>
+<style>
+@font-face { font-family:'PFL'; src:url('../assets/fonts/PingFangSC-Light.otf'); }
+@font-face { font-family:'PFR'; src:url('../assets/fonts/PingFangSC-Regular.otf'); }
+@font-face { font-family:'PFM'; src:url('../assets/fonts/PingFangSC-Medium.otf'); }
+:root { --bg:#16161b; --panel:#1f1f26; --card:#292932; --card2:#31313b; --line:#33333e; --fg:#ecebf1; --dim:#9d9cab; --faint:#6f6e7c;
+  --acc:#86aefc; --warm:#f0b54a; --red:#f07a7a; --ok:#59c48a; --vio:#b9a3ff; }
+* { box-sizing:border-box; }
+html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); overflow:hidden;
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif; }
+button,select,input,textarea { font:inherit; color:var(--fg); }
+button { background:var(--card2); border:1px solid #444452; border-radius:9px; padding:6px 13px; cursor:pointer; white-space:nowrap; }
+button:hover { background:#3a3a46; } button.primary { background:var(--acc); border-color:var(--acc); color:#10131c; font-weight:600; }
+button.small { padding:3px 9px; font-size:13px; border-radius:7px; } button.on { background:#34466e; border-color:#5d7cc0; }
+button.warm { background:var(--warm); border-color:var(--warm); color:#1d1606; font-weight:600; }
+select,input,textarea { background:#17171d; border:1px solid #474756; border-radius:8px; padding:5px 8px; }
+textarea { width:100%; resize:vertical; } input[type=number] { width:80px; }
+#app { display:grid; grid-template-rows:52px 1fr; grid-template-columns:1fr 380px; height:100vh; }
+#top { grid-column:1/3; display:flex; gap:10px; align-items:center; padding:0 16px; background:var(--panel); border-bottom:1px solid var(--line); }
+#top .brand { font-size:17px; font-weight:600; } #top .brand small { color:var(--dim); font-weight:400; font-size:13px; margin-left:8px; }
+#top .sp { flex:1; } #save { color:var(--dim); font-size:13px; } #save.bad { color:var(--red); }
+#left { display:flex; flex-direction:column; min-width:0; min-height:0; }
+#stagewrap { flex:1; display:flex; align-items:center; justify-content:center; padding:12px 14px 6px; min-height:0; }
+#stage { position:relative; background:#000; border-radius:6px; overflow:hidden; box-shadow:0 6px 30px rgba(0,0,0,.45); cursor:crosshair; }
+#stage canvas { position:absolute; inset:0; width:100%; height:100%; }
+#ov { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.t { position:absolute; left:50%; transform:translateX(-50%); white-space:pre; text-align:center; }
+.sub { font-family:'PFR'; color:#fff; padding:.12em .55em; border-radius:.25em; }
+.note { font-family:'PFL'; color:#fff; opacity:.88; background:rgba(20,16,32,.62); padding:.18em .6em; border-radius:.3em; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+.ttl { font-family:'PFM'; color:#fff; letter-spacing:.02em; text-shadow:0 2px 14px rgba(0,0,0,.6); }
+.ttl2 { font-family:'PFL'; color:#fff; opacity:.92; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+#hud { position:absolute; left:10px; top:8px; font:12px ui-monospace,Menlo,monospace; color:#ffe08a; background:rgba(0,0,0,.55); padding:2px 8px; border-radius:6px; pointer-events:none; }
+.pin { position:absolute; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%; background:var(--warm); color:#1d1606; font:700 12px/24px -apple-system,sans-serif; text-align:center; pointer-events:auto; cursor:pointer; box-shadow:0 0 0 3px rgba(0,0,0,.35); }
+.pin.done { background:var(--ok); }
+#transport { display:flex; align-items:center; gap:12px; padding:4px 16px; }
+#bPlay { width:50px; height:50px; border-radius:50%; font-size:20px; padding:0; background:#fff; color:#111; border:none; }
+#time { font-size:20px; font-variant-numeric:tabular-nums; min-width:150px; } #time small { color:var(--dim); font-size:15px; }
+#beatName { color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } #transport .sp { flex:1; }
+#tlwrap { padding:0 16px 12px; user-select:none; }
+#tl { position:relative; }
+.lbl { position:absolute; left:0; top:0; font-size:11px; color:var(--dim); background:var(--bg); padding:0 5px; border-radius:0 0 6px 0; z-index:3; pointer-events:none; }
+#rowBeats { position:relative; height:78px; border-radius:8px; overflow:hidden; background:#000; }
+.cell { position:absolute; top:0; bottom:0; border-right:2px solid #000; overflow:hidden; cursor:pointer; background:#2a2a33 center/cover no-repeat; }
+.cell .nm { position:absolute; left:0; right:0; top:0; padding:3px 6px 12px; font-size:12px; font-weight:600; color:#fff; text-shadow:0 1px 3px #000; background:linear-gradient(rgba(0,0,0,.7),transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cell .card { position:absolute; inset:18px 6px 4px; font-size:11px; color:#cfcfe0; overflow:hidden; }
+.cell.sel { box-shadow:inset 0 0 0 3px var(--acc); } .cell.hero::before { content:'★'; position:absolute; right:5px; bottom:2px; color:var(--warm); font-size:13px; }
+.cell.bad::after { content:''; position:absolute; left:0; right:0; bottom:0; height:4px; background:var(--red); }
+.cell .h { position:absolute; right:-2px; top:0; bottom:0; width:10px; cursor:ew-resize; z-index:2; }
+.cell.drop { box-shadow:inset 4px 0 0 var(--warm); }
+#rowVo { position:relative; height:30px; margin-top:6px; }
+.vo { position:absolute; top:4px; height:22px; border-radius:6px; background:#5b4a2a; border:1px solid #9a7b40; font-size:11px; line-height:20px; padding:0 6px; white-space:nowrap; overflow:hidden; }
+.vo.stale { background:#5a2a2a; border-color:#c06060; } .vo i { position:absolute; top:15px; width:1px; height:5px; background:#e8c98a; }
+#rowAux { position:relative; height:22px; margin-top:4px; }
+.aux { position:absolute; top:2px; height:18px; border-radius:9px; font-size:11px; line-height:18px; padding:0 8px; white-space:nowrap; overflow:hidden; background:#4f3f66; }
+.aux.npin { width:8px; padding:0; background:var(--warm); }
+#ruler { position:relative; height:18px; border-top:1px solid var(--line); margin-top:4px; }
+.tick { position:absolute; top:0; height:5px; border-left:1px solid #555; font-size:10px; color:var(--faint); } .tick span { position:absolute; left:3px; top:3px; }
+#ph { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:#ff5d5d; pointer-events:none; z-index:6; }
+#side { background:var(--panel); border-left:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
+#tabs { display:flex; gap:4px; padding:10px 12px 0; border-bottom:1px solid var(--line); }
+#tabs button { border:none; border-radius:9px 9px 0 0; background:transparent; color:var(--dim); padding:8px 13px; }
+#tabs button.cur { background:var(--card); color:var(--fg); font-weight:600; }
+#panel { flex:1; overflow:auto; padding:12px 14px 30px; }
+.sec { margin:2px 0 14px; } .sec h3 { margin:0 0 6px; font-size:13px; color:var(--dim); font-weight:600; }
+.row2 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; } .muted { color:var(--dim); font-size:13px; }
+.thumb { width:100%; aspect-ratio:16/9; border-radius:8px; background:#2a2a33 center/cover; margin-bottom:8px; }
+.lint { background:var(--card); border-radius:10px; padding:8px 10px; margin-bottom:8px; font-size:14px; border-left:4px solid var(--warm); }
+.lint.red { border-left-color:var(--red); } .lint .a { margin-top:6px; display:flex; gap:6px; }
+.ncard { background:var(--card); border-radius:10px; padding:9px 11px; margin-bottom:8px; } .ncard.done { opacity:.55; }
+.ncard .m { font-size:12px; color:var(--dim); margin-bottom:3px; } .ncard .m b { color:var(--fg); cursor:pointer; }
+#composer { position:absolute; z-index:8; width:300px; background:var(--panel); border:1px solid #4a4a5a; border-radius:12px; padding:10px; box-shadow:0 10px 40px rgba(0,0,0,.6); cursor:default; }
+#composer textarea { height:70px; } #composer .r { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
+#toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#2c2c36; border:1px solid #4a4a5a; border-radius:20px; padding:7px 16px; font-size:14px; display:none; z-index:20; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <div class="brand">《懒》动态预览<small>示意图 + 占位配音 · 浏览器实时合成，不烧录</small></div>
+    <span id="save"></span>
+    <div class="sp"></div>
+    <button id="bHud" class="small on" title="左上角显示拍点号和时间">拍点标签</button>
+    <button id="bXf" class="small on" title="拍点之间 0.25 秒交叉淡化">淡化转场</button>
+    <button id="bSafe" class="small" title="显示字幕安全框">安全框</button>
+    <button id="bUndo" class="small">撤销</button>
+    <a href="../index.html"><button class="small">回审片室</button></a>
+    <button id="bExport" class="warm" title="定稿后才用：用 Concat 一次导出">导出成片…</button>
+  </div>
+  <div id="left">
+    <div id="stagewrap"><div id="stage"><canvas id="cv" width="1920" height="1080"></canvas><div id="ov"></div><div id="hud"></div></div></div>
+    <div id="transport">
+      <button id="bPlay">▶</button>
+      <div id="time">0:00.0 <small>/ 1:05</small></div>
+      <div id="beatName"></div><div class="sp"></div>
+      <span class="muted">点画面任意处 = 在此刻此处留意见</span>
+    </div>
+    <div id="tlwrap"><div id="tl">
+      <div id="rowBeats"></div>
+      <div id="rowVo"><span class="lbl">旁白</span></div>
+      <div id="rowAux"><span class="lbl">字 · 意见</span></div>
+      <div id="ruler"></div>
+      <div id="ph"></div>
+    </div></div>
+  </div>
+  <div id="side"><div id="tabs"></div><div id="panel"></div></div>
+</div>
+<div id="toast"></div>
+<script src="live.js"></script>
+</body>
+</html>
