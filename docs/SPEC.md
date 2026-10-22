@@ -10,7 +10,7 @@
 | one_thing | 这部片子只想让人记住的一句话（所有参与者对齐的锚） |
 | music | `{file, gain, fade_in, fade_out}` 配乐 |
 | vo_gain | 旁白整体增益 |
-| style | `{sub_size, sub_plate, note_size, title_size}` 字幕与小字样式 |
+| style | `{sub_size, sub_plate, note_size, title_size, title_y}` 字幕与小字样式；title_y 为片名纵向位置（像素，默认 520，副标题在其下 +105） |
 | beats | 拍点数组（顺序即时间顺序） |
 | notes | 意见数组（人和 AI 同一格式） |
 | rev, saved | 版本号与最后保存标记（页面据此自动刷新） |
@@ -27,12 +27,12 @@
 | role, verb | 叙事角色与动作（如 证据·提速） |
 | what | 画面要表达什么（给生成模型和审片者看） |
 | hero | 关键拍：自动重排时间时不让时长 |
-| vo | `{text, file, dur, lead, words:[{t,d,w}]}` 旁白；lead 为拍内起点；words 为字级时间 |
+| vo | `{text, say, file, dur, lead, words:[{t,d,w}]}` 旁白；lead 为拍内起点；words 为字级时间；say 可选，为配音时实际朗读的文本（纠正多音字，如「六百万航老代码」），字幕与片名仍显示 text |
 | vo_style | 配音语气说明 |
 | caption | 画面小字 |
 | title | 是否片名拍（旁白第一句作片名，caption 作副标题） |
 | dim | 压暗程度 0–1 |
-| duck, duck_release | 配乐骤降（如急停拍） |
+| duck, duck_release | 配乐骤降（如急停拍）；duck 为保留的配乐比例，0 即全静音，慎用（《懒》N14 的成因） |
 | sfx | `[{file, at, gain}]` 音效，at 为拍内偏移（可为负） |
 
 ## 意见 note
