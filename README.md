@@ -17,6 +17,7 @@ server.py       本地服务：端出片子目录 + 交互页，HTTP 接口
 render/concat.py 渲染后端（Concat headless MCP）：审片版 480p（叠拍点号）/ 定稿 1080p
 tools/grade.py  色调卡 + LUT（.cube）生成与套用，保证图与视频同一色调
 tools/sfx_synth.py 程序化音效（numpy/scipy）
+tools/mixdown.py  离线混音（同交互页规则：配乐淡入淡出+duck、旁白、音效）→ wav，给会听的 AI 审听；python3 tools/mixdown.py <片子目录> out.wav [起 止]（需 numpy）
 examples/lan/   示例：《懒》Gemini 4 Argon 宣传片（只带 doc.json，媒体不入库）
 docs/           SPEC（源文件格式）、AGENTS（AI 参与说明）、METHOD（方法与实测数据）、ROADMAP
 ```
