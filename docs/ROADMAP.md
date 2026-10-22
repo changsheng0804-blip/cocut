@@ -1,6 +1,10 @@
 # 路线
 
 ## 近期
+- [x] **反射层体检**：`tools/reflex.py`（EmbeddingGemma 2，本地，按内容哈希缓存，改一拍约 4 秒）。
+- [x] **点名复核接口**：`cocut/review.py` + `/api/review*` + `cli.py review`。反射层开单、任何 AI 只答是非题、平台按拍标红绿；素材改了旧单自动过期。实验依据见 experiments/bench/RESULTS.md 路线 D。
+- [ ] 页面上按拍显示红/绿/黄/灰和理由；改一拍后自动体检+开单。
+- [ ] 复核员适配：Gemini（agy）自动领单脚本、云端大模型领单、MCP 工具。
 - [~] **局部发音修正**（《懒》N13，已在示例修复）：`vo.say` 记录配音替换文本，`/api/tts` 支持 say、只重配这一拍。待做：全片读音表（多音字词典）自动套用、界面上编辑 say。
 - [x] **4a 音频出错排查**（《懒》N14，已修复）：`tools/mixdown.py` 离线混音后定位为 duck=0 造成 55.0–56.6 秒纯数字静音，改 duck 0.12 + 急停音余尾。
 - [ ] **导出端直接用 mixdown 音轨**：render/concat.py 不再自己摆配乐/旁白/音效，改为铺一条 mixdown.py 生成的成品音轨，浏览器与导出声音完全一致，顺带解决导出端 duck。
