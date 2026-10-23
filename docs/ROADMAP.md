@@ -2,6 +2,12 @@
 
 ## 近期
 - [x] **文字脚本 → 预览草稿**（`cli.py new script.md 片子目录`）：配音并发、文字卡占位、配乐可省；9 拍示例 7 秒出草稿。新手示例 examples/hello。
+### 雪人片头试用反馈（2026-10-23，13 拍代码渲染片，1280×720）
+- [x] P1 cocheck 复核员链：运行时登记默认不自动复核（不悄悄花额度）；进度 who/step/done/total；`POST …/review/cancel`。
+- [x] P2 画内有意文字：拍点 `expected_text` → 复核题改问「字对不对」；`sound` 与画面说明分开，声音词不出视觉题；片名拍 `title_in_image` / `title_text`。
+- [x] P3 拍点 `clip: {file, in, out}`：审片页和快照直接播真实渲染片段，不重新烧录；服务端支持 Range。
+- [x] 小修：`server.py --host` / `COCUT_HOST`；`cli.py frame all` 3 帧并行；API.md 写清 GET 也要令牌；16:9 任意分辨率照写真实值。
+- [ ] 暂缓：整片多轨 stems、复核单带上一版问题（prev_problems）、非 16:9 画幅、批量抽帧复用同一个 Chrome。
 - [ ] 导出不依赖 Concat（试用者多数没有）：浏览器录制或 ffmpeg 拼图+混音轨。等试用反馈定。
 - [x] **反射层体检**：`tools/reflex.py`（EmbeddingGemma 2，本地，按内容哈希缓存，改一拍约 4 秒）。
 - [x] **点名复核接口**：`cocut/review.py` + `/api/review*` + `cli.py review`。反射层开单、任何 AI 只答是非题、平台按拍标红绿；素材改了旧单自动过期。实验依据见 experiments/bench/RESULTS.md 路线 D。
