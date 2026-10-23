@@ -22,6 +22,16 @@ textarea { width:100%; resize:vertical; } input[type=number] { width:80px; }
 #app { display:grid; grid-template-rows:52px 1fr; grid-template-columns:1fr 380px; height:100vh; }
 #top { grid-column:1/3; display:flex; gap:10px; align-items:center; padding:0 16px; background:var(--panel); border-bottom:1px solid var(--line); }
 #top .brand { font-size:17px; font-weight:600; } #top .brand small { color:var(--dim); font-weight:400; font-size:13px; margin-left:8px; }
+.rv { position:absolute; left:0; right:0; bottom:0; height:6px; z-index:1; } .rv.green { background:var(--ok); } .rv.red { background:var(--red); } .rv.yellow { background:var(--warm); }
+.rv.grey { background:repeating-linear-gradient(90deg,#8a8a96 0 6px,#55555f 6px 12px); animation:rvmove 1s linear infinite; } .rv.split { background:linear-gradient(90deg,var(--red) 50%,var(--warm) 50%); }
+@keyframes rvmove { to { background-position:12px 0; } }
+#rvsum { white-space:nowrap; font-size:13px; cursor:pointer; padding:3px 9px; border-radius:10px; background:var(--card); } #rvsum b { margin:0 2px; } .cG{color:var(--ok)} .cR{color:var(--red)} .cY{color:var(--warm)} .cN{color:var(--dim)}
+.rvbox { position:absolute; border:3px solid var(--red); border-radius:6px; box-shadow:0 0 0 2000px rgba(0,0,0,.18); pointer-events:none; }
+.rvbox span, .rvtag { position:absolute; background:var(--red); color:#1b0b0b; font:600 12px/1.5 -apple-system,sans-serif; padding:1px 7px; border-radius:5px; }
+.rvbox span { left:-3px; top:-24px; white-space:nowrap; } .rvtag { right:10px; bottom:12%; max-width:34%; font-size:11px; pointer-events:none; } .rvtag.yellow { background:var(--warm); }
+.rvc { background:var(--card); border-radius:10px; padding:9px 11px; margin-bottom:8px; border-left:5px solid var(--faint); }
+.rvc.red { border-left-color:var(--red); } .rvc.yellow { border-left-color:var(--warm); } .rvc.green { border-left-color:var(--ok); } .rvc.split { border-left-color:var(--red); border-left-style:dashed; }
+.rvc .p { margin:4px 0 0; font-size:13px; } .rvc .who { color:var(--dim); font-size:12px; }
 #top .sp { flex:1; } #save { color:var(--dim); font-size:13px; } #save.bad { color:var(--red); }
 #left { display:flex; flex-direction:column; min-width:0; min-height:0; }
 #stagewrap { flex:1; display:flex; align-items:center; justify-content:center; padding:12px 14px 6px; min-height:0; }
@@ -82,6 +92,7 @@ textarea { width:100%; resize:vertical; } input[type=number] { width:80px; }
   <div id="top">
     <div class="brand">《懒》动态预览<small>示意图 + 占位配音 · 浏览器实时合成，不烧录</small></div>
     <span id="save"></span>
+    <span id="rvsum" title="AI 复核：点开看哪些拍有问题"></span>
     <div class="sp"></div>
     <button id="bHud" class="small on" title="左上角显示拍点号和时间">拍点标签</button>
     <button id="bXf" class="small on" title="拍点之间 0.25 秒交叉淡化">淡化转场</button>
