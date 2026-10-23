@@ -1,0 +1,4 @@
+[
+  {"by": "flash", "cmd": "agy --model gemini-3.8-flash --dangerously-skip-permissions -p {prompt}"},
+  {"by": "gemini", "cmd": "agy --model gemini-4-argon-high --dangerously-skip-permissions -p {prompt}", "escalate": true}
+]
