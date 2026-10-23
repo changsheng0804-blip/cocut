@@ -2,17 +2,15 @@
 #   python3 cocut/cli.py show [片子目录]
 #   python3 cocut/cli.py note --beat 2c --by claude --dim 画面 --sev 2 "指针穿出表壳" --fix "指针收回表盘内"
 #   python3 cocut/cli.py set 2c dur 4.2      （值按 JSON 解析，失败按字符串）
-# 点名复核（见 docs/AGENTS.md）：
-#   python3 cocut/cli.py review open [--reflex report.json] [--run]   按反射层报告开单（--run 先跑体检）
-#   python3 cocut/cli.py review list --by gemini                     打印待复核的单（JSON）
-#   python3 cocut/cli.py review answer 2c-1a2b3c4d5e --by gemini '{"0":"yes","1":"no"}'
-#   python3 cocut/cli.py review status                               每拍红/绿/黄/灰
+# AI 智能审核已拆成独立插件 cocheck（体检、复核单、复核员、统一模型接入口），这里只转发到它的 HTTP 服务：
+#   python3 cocut/cli.py review status | list --by gemini | answer <单号> --by gemini '{"0":"no"}' | check
+#   更多（换模型、并发、远端模型）直接用 cocheck 命令行，见 cocheck 仓库 README。
 import argparse, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('args', nargs='*')
 ap.add_argument('--film', default=os.environ.get('COCUT_FILM', '.')); ap.add_argument('--beat'); ap.add_argument('--t', type=float)
 ap.add_argument('--by', default='user'); ap.add_argument('--dim'); ap.add_argument('--sev', type=int); ap.add_argument('--fix')
-ap.add_argument('--reflex'); ap.add_argument('--run', action='store_true'); ap.add_argument('--second', action='store_true')
+ap.add_argument('--second', action='store_true')
 a = ap.parse_intermixed_args(); os.environ['COCUT_FILM'] = os.path.abspath(a.film); import api
 P = os.path.join(os.environ['COCUT_FILM'], 'doc.json'); d = json.load(open(P, encoding='utf-8'))
 def save(by): d['saved'] = time.strftime('%Y-%m-%dT%H:%M:%S') + '-' + by; print(api.save(d)[0])
@@ -39,18 +37,17 @@ elif a.cmd == 'set':
     except Exception: pass
     b = next(x for x in d['beats'] if x['id'] == bid); b[key] = val; save(a.by)
 elif a.cmd == 'review':
-    import review; F = os.environ['COCUT_FILM']; sub = (a.args or ['status'])[0]
-    if sub == 'open':
-        rep = None
-        if a.run:
-            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools')); import reflex
-            rep = reflex.check_film(F, os.path.join(review._dir(F), 'reflex.json'))
-        elif a.reflex: rep = json.load(open(a.reflex, encoding='utf-8'))
-        print(json.dumps(review.open_tickets(F, rep), ensure_ascii=False))
-    elif sub == 'list': print(json.dumps(review.list_open(F, a.by if a.by != 'user' else None, a.second), ensure_ascii=False, indent=1))
-    elif sub == 'answer': print(json.dumps(review.answer(F, a.args[1], a.by, json.loads(a.args[2]), a.fix)[0], ensure_ascii=False))
-    elif sub == 'status':
-        for bid, v in review.status(F).items():
-            print('%-3s %-6s %s' % (bid, v['color'], '；'.join('%s（%s%s）' % (p['what'], ','.join(p['by']), '；%s 不同意' % ','.join(p['against']) if p['against'] else '') for p in v.get('problems', [])) or v.get('ticket', '')))
-    else: sys.exit('review 子命令：open / list / answer / status')
+    import urllib.request
+    U = os.environ.get('COCHECK_URL', 'http://127.0.0.1:8796').rstrip('/') + '/v1/projects/' + (os.environ.get('COCHECK_PROJECT') or os.path.basename(os.environ['COCUT_FILM'].rstrip('/')))
+    def http(path, body=None):
+        r = urllib.request.Request(U + path, data=None if body is None else json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
+        return json.load(urllib.request.urlopen(r, timeout=60))
+    sub = (a.args or ['status'])[0]
+    if sub == 'status':
+        for bid, v in http('/status')['status'].items():
+            print('%-3s %-6s %s' % (bid, v['color'], '；'.join('%s（%s%s）' % (p['what'], ','.join(p['by']), '；%s 不同意' % ','.join(p['against']) if p['against'] else '') for p in v.get('problems', []))))
+    elif sub == 'list': print(json.dumps(http('/tickets?by=%s%s' % (a.by, '&second=1' if a.second else ''))['tickets'], ensure_ascii=False, indent=1))
+    elif sub == 'answer': print(json.dumps(http('/answer', dict(ticket=a.args[1], by=a.by, answers=json.loads(a.args[2]), note=a.fix)), ensure_ascii=False))
+    elif sub == 'check': print(json.dumps(http('/check', {}), ensure_ascii=False))
+    else: sys.exit('review 子命令：status / list / answer / check')
 else: sys.exit('未知命令：' + a.cmd)
