@@ -7,7 +7,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
 const MOVES = { static: '固定', push: '缓推', pan: '横移', orbit: '环绕', pull: '拉远' };
 const S = { doc: null, t: 0, playing: false, sel: null, tab: 'beat', imgs: {}, undo: [], hud: true, xf: true, safe: false,
-            audio: { ctx: null, bufs: {}, srcs: [] }, t0: 0, c0: 0, api: true, draft: null };
+            audio: { ctx: null, bufs: {}, srcs: [] }, t0: 0, c0: 0, api: true, draft: null, rv: { status: {}, check: {} }, rvKey: '' };
 
 // ---------- 时间推导 ----------
 function layout() {
@@ -110,6 +110,18 @@ function overlay(b, t) {
     const p = el('div', 'pin', n.id.replace('N', '')); p.style.left = n.x * 100 + '%'; p.style.top = n.y * 100 + '%';
     p.onclick = (e) => { e.stopPropagation(); S.tab = 'notes'; renderSide(); }; ov.appendChild(p);
   }
+  const rs = S.rv.status[b.id];
+  if (rs && (rs.color === 'red' || rs.color === 'yellow')) {
+    const txt = rs.color === 'red' ? rs.problems.filter((p) => p.k !== 'text' || !tileOf(rs)).map((p) => rvDesc(p)).join('；') : '';
+    const tile = tileOf(rs), textBad = rs.problems.some((p) => p.k === 'text');
+    if (tile != null && (textBad || rs.color === 'yellow')) {
+      const bx = el('div', 'rvbox'); Object.assign(bx.style, { left: (tile % 3) * 33.33 + '%', top: Math.floor(tile / 3) * 33.33 + '%', width: '33.33%', height: '33.33%' });
+      if (rs.color === 'yellow') bx.style.borderColor = 'var(--warm)'; const sp = el('span', '', textBad ? '这里有字' : '待复核：有没有字？'); if (rs.color === 'yellow') sp.style.background = 'var(--warm)';
+      bx.appendChild(sp); ov.appendChild(bx);
+    }
+    if (txt) ov.appendChild(el('div', 'rvtag', txt));
+    else if (rs.color === 'yellow' && tile == null) ov.appendChild(el('div', 'rvtag yellow', `待 AI 复核 ${rs.asks.length} 题`));
+  }
   $('#hud').style.display = S.hud ? '' : 'none';
   $('#hud').textContent = `${b.id}  ${b.role || ''}·${b.verb || ''}  ${fmt(t)}`;
 }
@@ -179,6 +191,7 @@ function renderTL() {
     c.style.left = X(b._s) + 'px'; c.style.width = X(b.dur) + 'px';
     if (b.image) c.style.backgroundImage = `url(${b.image})`; else c.appendChild(el('div', 'card', b.what || ''));
     c.appendChild(el('div', 'nm', `${b.id} ${b.verb || ''}`));
+    const rs = S.rv.status[b.id]; if (rs) { const r = el('div', 'rv ' + rvCls(rs)); c.title = `${b.id}：${rvLine(rs)}`; c.appendChild(r); }
     const h = el('div', 'h'); c.appendChild(h);
     h.onmousedown = (e) => { e.stopPropagation(); resizeDrag(e, b); };
     c.onmousedown = (e) => { if (e.target === h) return; S.sel = b.id; S.tab = 'beat'; reorderDrag(e, b); };
@@ -232,16 +245,18 @@ function reorderDrag(e, b) {            // 点一下 = 选中并跳到这拍；�
 // ---------- 右侧面板 ----------
 function renderSide() {
   const tabs = $('#tabs'); tabs.innerHTML = ''; const L = lint();
-  for (const [k, n] of [['beat', '拍点'], ['lint', `检查 ${L.length}`], ['notes', `意见 ${S.doc.notes.filter((x) => x.status !== 'done').length}`], ['film', '整片']])
+  const nR = Object.values(S.rv.status).filter((x) => x.color === 'red').length;
+  for (const [k, n] of [['beat', '拍点'], ['review', `复核${nR ? ' ' + nR : ''}`], ['lint', `检查 ${L.length}`], ['notes', `意见 ${S.doc.notes.filter((x) => x.status !== 'done').length}`], ['film', '整片']])
     tabs.appendChild(btn(n, S.tab === k ? 'cur' : '', () => { S.tab = k; renderSide(); }));
   const p = $('#panel'); p.innerHTML = '';
-  ({ beat: beatPanel, lint: lintPanel, notes: notesPanel, film: filmPanel })[S.tab](p, L);
+  ({ beat: beatPanel, review: reviewPanel, lint: lintPanel, notes: notesPanel, film: filmPanel })[S.tab](p, L);
 }
 function field(p, label, node) { const s = el('div', 'sec'); s.appendChild(el('h3', '', label)); s.appendChild(node); p.appendChild(s); return node; }
 function beatPanel(p) {
   const b = selBeat() || beatAt(S.t); S.sel = b.id;
   const th = el('div', 'thumb'); if (b.image) th.style.backgroundImage = `url(${b.image}?v=${S.doc.rev})`; p.appendChild(th);
   const r = el('div', 'row2'); r.appendChild(el('b', '', `${b.id}`)); r.appendChild(el('span', 'muted', `${fmt(b._s)}–${fmt(b._e)} · ${b.shot || ''}`)); p.appendChild(r);
+  const brs = S.rv.status[b.id]; if (brs) { const q = el('div', 'rvc ' + rvCls(brs)); q.appendChild(el('div', '', '复核：' + rvLine(brs))); q.onclick = () => { S.tab = 'review'; renderSide(); }; q.style.cursor = 'pointer'; p.appendChild(q); }
   const r2 = el('div', 'row2');
   const du = el('input'); du.type = 'number'; du.step = 0.1; du.value = b.dur; du.onchange = () => { push(); b.dur = Math.max(0.5, +du.value); changed(); };
   const mv = el('select'); for (const [k, n] of Object.entries(MOVES)) { const o = el('option', '', n); o.value = k; o.selected = b.move === k; mv.appendChild(o); }
@@ -346,7 +361,7 @@ async function save() {
   localStorage.setItem('lan_live_doc', JSON.stringify(S.doc));
   try {
     const r = await fetch('/live/save', { method: 'POST', body: JSON.stringify(S.doc) }); if (!r.ok) throw new Error(r.status);
-    const j = await r.json(); setSave('已保存 ' + (j.saved || ''));
+    const j = await r.json(); setSave('已保存 ' + (j.saved || '')); setTimeout(() => pollReview(true), 300);
   } catch (e) { setSave('只存在浏览器里（保存接口未启用）', true); }
 }
 function setSave(t, bad) { const s = $('#save'); s.textContent = t; s.classList.toggle('bad', !!bad); }
@@ -359,6 +374,60 @@ async function poll() {                   // Hark 在外面改了 doc.json，页
   } catch (e) {}
 }
 async function ensureAudioFiles() { S.audio.bufs = {}; const A = S.audio; A.ctx && await Promise.all([S.doc.music.file, ...S.doc.beats.filter((b) => b.vo && b.vo.file).map((b) => b.vo.file), ...S.doc.beats.flatMap((b) => (b.sfx || []).map((x) => x.file))].map(loadBuf)); }
+
+
+// ---------- 复核（反射层开单 → AI 答是非题 → 按拍红绿） ----------
+const RVNAME = (r) => ({ user: '你', reflex: '反射层' })[r] || r;
+const RVC = { green: '没问题', red: '有问题', yellow: '待复核', grey: '改过了，重新体检中' };
+function rvCls(rs) { return rs.color === 'red' && !rs.final && rs.problems.some((p) => p.against.length) ? 'red split' : rs.color; }
+function tileOf(rs) { const a = (rs.asks || []).find((x) => x.k === 'text'); return a && Number.isInteger(a.tile) && a.tile < 9 ? a.tile : null; }
+function rvDesc(p) { return ({ text: '画面里有字', swap: '不是这个场景', el: '缺：' + p.what, vo: '配音不是这句', poly: `「${p.what}」读错` })[p.k] || p.what; }
+function rvLine(rs) {
+  if (rs.color === 'red') return rs.problems.map((p) => rvDesc(p) + `（${p.by.map(RVNAME).join('、')}${p.against.length ? '；' + p.against.map(RVNAME).join('、') + ' 不同意' : ''}）`).join('；');
+  if (rs.color === 'green') return '没问题（' + (rs.reviewers || ['反射层']).map(RVNAME).join('、') + '）';
+  if (rs.color === 'yellow') return rs.unsure && rs.unsure.length ? '复核员拿不准：' + rs.unsure.join('、') : `等 AI 复核 ${rs.asks.length} 题`;
+  return RVC.grey;
+}
+function renderRvSum() {
+  const v = Object.values(S.rv.status), n = (c) => v.filter((x) => x.color === c).length, s = $('#rvsum'); if (!v.length) { s.style.display = 'none'; return; }
+  s.style.display = ''; s.innerHTML = `复核 <b class="cG">${n('green')}</b>绿 <b class="cR">${n('red')}</b>红 <b class="cY">${n('yellow')}</b>待 ${n('grey') ? `<b class="cN">${n('grey')}</b>重查` : ''}${S.rv.check.running ? ' · 体检中…' : ''}`;
+  s.onclick = () => { S.tab = 'review'; renderSide(); };
+}
+async function pollReview(force) {
+  try {
+    const j = await (await fetch('/api/review')).json(); if (!j.status) return; const k = JSON.stringify([j.status, j.check.running, j.check.error]);
+    if (!force && k === S.rvKey) return; S.rv = j; S.rvKey = k; renderTL(); renderRvSum(); frame();
+    if (['review', 'beat'].includes(S.tab) && !$('#panel').contains(document.activeElement)) renderSide();
+  } catch (e) {}
+}
+async function rvJudge(rs, bad) {
+  const answers = {}; for (const a of rs.asks) answers[a.i] = (a.k === 'text') === bad ? 'yes' : 'no';
+  const r = await fetch('/api/review/answer', { method: 'POST', body: JSON.stringify({ ticket: rs.ticket, by: 'user', answers }) }); const j = await r.json();
+  toast(j.error ? '没记上：' + j.error : bad ? '已判有问题' : '已判没问题'); pollReview(true);
+}
+function reviewPanel(p) {
+  const c = S.rv.check || {}, hd = el('div', 'row2');
+  hd.append(el('span', 'muted', c.running ? '反射层体检中…' : c.error ? '体检出错：' + c.error : c.last ? `上次体检 ${c.last}，用时 ${c.seconds}s` : '还没有体检'),
+    btn('重新体检', 'small', async () => { await fetch('/api/review/check', { method: 'POST', body: '{}' }); toast('开始体检'); pollReview(true); }));
+  p.appendChild(hd);
+  p.appendChild(el('div', 'muted', '反射层先筛，可疑处出是非题给 AI 复核；你只需看红的和有分歧的。你的判断是最终的。'));
+  const order = { red: 0, yellow: 1, grey: 2, green: 3 }, rows = S.doc.beats.filter((b) => S.rv.status[b.id]).sort((a, b) => order[S.rv.status[a.id].color] - order[S.rv.status[b.id].color]);
+  let greens = 0;
+  for (const b of rows) {
+    const rs = S.rv.status[b.id]; if (rs.color === 'green' && !rs.final) { greens++; continue; }
+    const card = el('div', 'rvc ' + rvCls(rs)); card.appendChild(el('div', '', '')).innerHTML = `<b>${b.id}</b> <span class="muted">${RVC[rs.color]}${rs.final ? ' · 你已裁决' : ''}</span>`;
+    card.appendChild(el('div', 'who', b.what || ''));
+    if (rs.color === 'red') for (const q of rs.problems) card.appendChild(el('div', 'p', `${rvDesc(q)} —— ${q.by.map(RVNAME).join('、')} 说有问题${q.against.length ? '，' + q.against.map(RVNAME).join('、') + ' 不同意' : ''}`));
+    if (rs.color === 'yellow') for (const a of rs.asks) card.appendChild(el('div', 'p', '？ ' + a.q));
+    for (const [who, x] of Object.entries(rs.answers || {})) if (x.note) card.appendChild(el('div', 'who', `${RVNAME(who)}：${x.note}`));
+    const a = el('div', 'row2'); a.style.marginTop = '6px';
+    a.appendChild(btn('跳过去', 'small', () => { S.sel = b.id; seek(b._s + 0.01); }));
+    if (rs.color === 'red') a.appendChild(btn('转成意见', 'small', () => { addNote({ t: b._s + b.dur / 2, x: 0.5, y: 0.5, beat: b.id, text: '复核：' + rs.problems.map(rvDesc).join('；') }); toast('已加到意见'); }));
+    if (rs.ticket && rs.asks.length && rs.color !== 'grey') a.append(btn('我判没问题', 'small', () => rvJudge(rs, false)), btn('我判有问题', 'small', () => rvJudge(rs, true)));
+    card.appendChild(a); p.appendChild(card);
+  }
+  if (greens) p.appendChild(el('div', 'muted', `另有 ${greens} 拍没问题。`));
+}
 
 // ---------- 其它 ----------
 function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => (t.style.display = 'none'), 2600); }
@@ -394,6 +463,6 @@ async function main() {
     else if (e.key === 'ArrowLeft') seek(S.t - (e.shiftKey ? 1 : 1 / 24)); else if (e.key === 'ArrowRight') seek(S.t + (e.shiftKey ? 1 : 1 / 24));
     else if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo(); }
   });
-  addEventListener('resize', fit); document.fonts.ready.then(fit); fit(); renderSide(); setInterval(poll, 3000);
+  addEventListener('resize', fit); document.fonts.ready.then(fit); fit(); renderSide(); setInterval(poll, 3000); pollReview(true); setInterval(pollReview, 2000);
 }
 main();
