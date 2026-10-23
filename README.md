@@ -35,9 +35,10 @@ python3 server.py <片子目录> 8790
 |---|---|---|
 | GET | /api/doc | 当前源文件 |
 | GET | /api/plan | 编译后的时间线（每拍起止、旁白、字幕、音效） |
+| GET | /api/frame | 画面快照 PNG：`?t=12.3` 或 `?beat=2c`（取正中），可加 `hud=1`、`marks=1`（叠复核框和意见点）、`xf=0`、`width=960`。和审片页同一套渲染，需要本机有 Chrome |
 | POST | /api/save | 整份保存（自动备份到 history/） |
 | POST | /api/note | 留意见 `{beat或t, text, by, dim, sev, fix}` |
-| POST | /api/tts | 重配一句 `{id, text, voice?, rate?, pitch?}` → 文件 + 时长 + 字级时间 |
+| POST | /api/tts | 重配一句 `{id, text, say?, voice?, rate?, pitch?}` → 文件 + 时长 + 字级时间 + said |
 | POST | /api/export | 导出 `{final:true}` 1080p，或 `{final:false, ver}` 审片版 |
 
 详见 docs/SPEC.md 与 docs/AGENTS.md。
