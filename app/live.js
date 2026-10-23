@@ -34,6 +34,31 @@ const readingStale = (b) => !!(b.vo && b.vo.file && said(b) !== spoken(b));
 function pinSaid(d) { for (const b of d.beats || []) if (b.vo && b.vo.file && !('said' in b.vo)) b.vo.said = b.vo.say || b.vo.text; return d; }   // 老数据先钉住当时念的
 const voStale = (b) => !!(b.vo && (b.vo.stale || readingStale(b)));
 
+// ---------- 配乐骤降（duck）：和 tools/mixdown.py 同一套曲线 ----------
+// 拍点 duck = 保留的配乐比例；duck_attack 下压用时（默认 0.04s，越短越像“刹住”，也越像断了）；duck_release 拍点结束后回升用时（默认 0.8s）。
+function duckK(t) {
+  let k = 1;
+  for (const b of S.doc.beats) {
+    if (b.duck == null) continue; const a = b.duck_attack || 0.04, r = b.duck_release || 0.8;
+    if (t >= b._s - a && t < b._e + r) k *= clamp(t < b._s ? 1 - (t - b._s + a) / a * (1 - b.duck) : t < b._e ? b.duck : b.duck + (t - b._e) / r * (1 - b.duck), 0, 1);
+  }
+  return k;
+}
+// 听感断层：没有旁白、没有音效、配乐又压得很低 → 连续超过 0.6s 就像播放断了（#8）
+function quietGaps() {
+  const bs = S.doc.beats, on = [];
+  for (const b of bs) {
+    if (b.vo) { const w = (b.vo.words || []).slice(-1)[0]; on.push([b._s + b.vo.lead, b._s + b.vo.lead + (w ? w.t + w.d : b.vo.dur)]); }
+    for (const x of b.sfx || []) { const bf = S.audio.bufs[x.file]; on.push([b._s + (x.at || 0), b._s + (x.at || 0) + (bf ? Math.min(bf.duration, 1.2) : 0.6)]); }
+  }
+  const out = []; let st = null; const m = S.doc.music;
+  for (let t = 1; t < S.len - (m.fade_out || 0); t += 0.05) {
+    const q = duckK(t) < 0.3 && !on.some(([a, z]) => t >= a && t < z);
+    if (q && st == null) st = t; if (!q && st != null) { if (t - st > 0.6) out.push([st, t]); st = null; }
+  }
+  return out;
+}
+
 // ---------- 检查（和 compile.py 同一套规则，实时跑） ----------
 function lint() {
   const out = [], bs = S.doc.beats;
@@ -47,6 +72,9 @@ function lint() {
     if (b.dur < 1.8) out.push({ lvl: 'yellow', beat: b.id, msg: `只有 ${b.dur.toFixed(1)}s，画面可能看不清` });
     if (!b.image) out.push({ lvl: 'yellow', beat: b.id, msg: '还没有示意图，现在显示文字卡' });
   });
+  for (const [a, z] of quietGaps()) { const b = beatAt(a);
+    out.push({ lvl: 'red', beat: b.id, msg: `${fmt(a)}–${fmt(z)} 有 ${(z - a).toFixed(1)}s 几乎没声音（配乐压到 ${Math.round((b.duck ?? 1) * 100)}%，没旁白没音效），听起来像断了`,
+      fix: b.duck != null ? ['配乐只压到 45%、缓一点', () => { b.duck = 0.45; b.duck_attack = 0.25; b.duck_release = 0.5; }] : null }); }
   const d = S.len - S.doc.target;
   if (Math.abs(d) > 0.5) out.push({ lvl: Math.abs(d) > 3 ? 'red' : 'yellow', msg: `总长 ${S.len.toFixed(1)}s，目标 ${S.doc.target}s（${d > 0 ? '多' : '少'} ${Math.abs(d).toFixed(1)}s）`,
     fix: ['从无旁白的拍点匀', () => fitTarget()] });
@@ -160,10 +188,7 @@ function startAudio() {
   const m = S.doc.music, mb = A.bufs[m.file];
   if (mb && from < S.len) {
     const s = A.ctx.createBufferSource(), g = A.ctx.createGain(); s.buffer = mb; s.connect(g); g.connect(A.master);
-    const ducks = S.doc.beats.filter((b) => b.duck != null);
-    const v = (t) => { let k = clamp(Math.min(t / m.fade_in, (S.len - t) / m.fade_out), 0, 1);
-      for (const b of ducks) { const r = b.duck_release || 0.8; if (t >= b._s - 0.04 && t < b._e + r) { const d = t < b._s ? 1 - (t - b._s + 0.04) / 0.04 * (1 - b.duck) : t < b._e ? b.duck : b.duck + (t - b._e) / r * (1 - b.duck); k *= clamp(d, 0, 1); } }
-      return m.gain * k; };
+    const v = (t) => m.gain * clamp(Math.min(t / m.fade_in, (S.len - t) / m.fade_out), 0, 1) * duckK(t);
     const n = Math.max(2, Math.ceil((S.len - from) / 0.03)), cur = new Float32Array(n);
     for (let i = 0; i < n; i++) cur[i] = v(from + (S.len - from) * i / (n - 1));
     g.gain.setValueCurveAtTime(cur, now, S.len - from);
