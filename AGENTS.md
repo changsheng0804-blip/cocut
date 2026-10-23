@@ -3,7 +3,7 @@
 你是这部片子的合作者之一，不是一次性的生成器。人和其他 AI 也在同一份 doc.json 上工作。
 
 ## 你能做什么
-1. **读片子**：`GET /api/doc` 或 `python3 cocut/cli.py show`。要看画面就看 `image` 引用的图；要看/听成片，请求方会给你审片版视频（叠了拍点号和时间码）。
+1. **读片子**：`GET /api/doc` 或 `python3 cocut/cli.py show`。要看画面就看 `image` 引用的图；要看成品画面（镜头运动、字幕、小字、转场都在）用 `GET /api/frame?t=12.3` 或 `cli.py frame 2c`（`frame all --dir shots/` 每拍一张）；要听，用 `tools/mixdown.py` 混出音轨。
 2. **留意见**：`POST /api/note` 或 `cli.py note --beat 2c --by <你的名字> --dim 画面 --sev 2 "问题" --fix "改法"`。一条意见只说一件事，指明拍点或时间，给出可执行的改法。
 3. **改内容**：只改你负责的维度，改拍点字段（`cli.py set <拍点> <字段> <值>` 或整份 `POST /api/save`）。改旁白文字后要重配这一句（`POST /api/tts`），用返回的 file/dur/words/said 更新该拍的 vo；或直接 `cli.py voice stale`。
 4. **读音**：多音字、念法写进全片读音表（`cli.py lex add 六百万行 六百万航 --py 行=háng`），单拍特例用 `cli.py say <拍点> <念法>`；`cli.py readings` 看每拍实际念的和哪些配音过期，`cli.py voice stale` 按当前读法重配。字幕永远显示原文。
