@@ -2,6 +2,12 @@
 #   python3 cocut/cli.py show [片子目录]
 #   python3 cocut/cli.py note --beat 2c --by claude --dim 画面 --sev 2 "指针穿出表壳" --fix "指针收回表盘内"
 #   python3 cocut/cli.py set 2c dur 4.2      （值按 JSON 解析，失败按字符串）
+# 读音（全片读音表 doc.lexicon + 拍点 vo.say 覆盖；改了读法的配音自动算过期）：
+#   python3 cocut/cli.py readings                         每拍：原文 → 实际念的，过期的标出来
+#   python3 cocut/cli.py lex add 六百万行 六百万航 --py 行=háng --note "代码行数"
+#   python3 cocut/cli.py lex rm 六百万行   |   lex list
+#   python3 cocut/cli.py say 2c "六百万航老代码"      （单拍覆盖；say 2c --clear 去掉，回到读音表）
+#   python3 cocut/cli.py voice stale | voice 2c          按当前读法重新配音（需要 edge-tts）
 # AI 智能审核已拆成独立插件 cocheck（体检、复核单、复核员、统一模型接入口），这里只转发到它的 HTTP 服务：
 #   python3 cocut/cli.py review status | list --by gemini | answer <单号> --by gemini '{"0":"no"}' | check
 #   更多（换模型、并发、远端模型）直接用 cocheck 命令行，见 cocheck 仓库 README。
@@ -10,9 +16,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('args', nargs='*')
 ap.add_argument('--film', default=os.environ.get('COCUT_FILM', '.')); ap.add_argument('--beat'); ap.add_argument('--t', type=float)
 ap.add_argument('--by', default='user'); ap.add_argument('--dim'); ap.add_argument('--sev', type=int); ap.add_argument('--fix')
-ap.add_argument('--second', action='store_true')
+ap.add_argument('--second', action='store_true'); ap.add_argument('--py', action='append', default=[]); ap.add_argument('--note'); ap.add_argument('--clear', action='store_true')
 a = ap.parse_intermixed_args(); os.environ['COCUT_FILM'] = os.path.abspath(a.film); import api
-P = os.path.join(os.environ['COCUT_FILM'], 'doc.json'); d = json.load(open(P, encoding='utf-8'))
+P = os.path.join(os.environ['COCUT_FILM'], 'doc.json'); d = api.pin_said(json.load(open(P, encoding='utf-8')))
 def save(by): d['saved'] = time.strftime('%Y-%m-%dT%H:%M:%S') + '-' + by; print(api.save(d)[0])
 if a.cmd == 'show':
     s = 0
@@ -36,6 +42,37 @@ elif a.cmd == 'set':
     try: val = json.loads(val)
     except Exception: pass
     b = next(x for x in d['beats'] if x['id'] == bid); b[key] = val; save(a.by)
+elif a.cmd == 'readings':
+    lex = d.get('lexicon') or []
+    for b in d['beats']:
+        if not b.get('vo'): continue
+        sp = api.spoken(b, lex); pl = api.poly(b, lex)
+        print('%-3s %s%s%s%s' % (b['id'], b['vo']['text'], '' if sp == b['vo']['text'] else ' → ' + sp, ' ' + json.dumps(pl, ensure_ascii=False) if pl else '',
+                                 '  ⚠ 配音过期（上次念的：%s）' % api.said(b) if api.reading_stale(b, lex) else ''))
+    print('读音表：', '；'.join('%s→%s%s' % (e['w'], e['say'], ' ' + json.dumps(e['py'], ensure_ascii=False) if e.get('py') else '') for e in lex) or '空')
+elif a.cmd == 'lex':
+    lex = d.setdefault('lexicon', []); sub = (a.args or ['list'])[0]
+    if sub == 'list': print(json.dumps(lex, ensure_ascii=False, indent=1))
+    elif sub == 'add':
+        w, say = a.args[1], a.args[2]; e = dict(w=w, say=say)
+        if a.py: e['py'] = dict(x.split('=', 1) for x in a.py)
+        if a.note: e['note'] = a.note
+        d['lexicon'] = [x for x in lex if x.get('w') != w] + [e]; save(a.by)
+    elif sub == 'rm': d['lexicon'] = [x for x in lex if x.get('w') != a.args[1]]; save(a.by)
+    else: sys.exit('lex 子命令：list / add / rm')
+elif a.cmd == 'say':
+    b = next(x for x in d['beats'] if x['id'] == a.args[0])
+    if not b.get('vo'): sys.exit('%s 没有旁白' % b['id'])
+    if a.clear: b['vo'].pop('say', None)
+    else: b['vo']['say'] = ' '.join(a.args[1:])
+    save(a.by)
+elif a.cmd == 'voice':
+    lex = d.get('lexicon') or []; which = a.args[0] if a.args else 'stale'
+    ids = [b['id'] for b in d['beats'] if b.get('vo') and (api.reading_stale(b, lex) or b['vo'].get('stale') or not b['vo'].get('file'))] if which == 'stale' else [which]
+    for bid in ids:
+        r, code = api.voice(d, bid); print(bid, '✓ %ss 念：%s' % (r['dur'], r['said']) if code == 200 else '✗ ' + str(r))
+    if ids: save(a.by)
+    else: print('没有过期的配音')
 elif a.cmd == 'review':
     import urllib.request
     U = os.environ.get('COCHECK_URL', 'http://127.0.0.1:8796').rstrip('/') + '/v1/projects/' + (os.environ.get('COCHECK_PROJECT') or os.path.basename(os.environ['COCUT_FILM'].rstrip('/')))
