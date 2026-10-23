@@ -50,14 +50,8 @@
 | status | open / todo / done |
 | reply, by_fix | 谁改了、怎么改的 |
 
-## 复核 review（`<片子>/.cocut/review.json`，由平台维护）
-反射层（`tools/reflex.py`）体检报告存 `.cocut/reflex.json`；`cocut/review.py` 按报告给每拍开单。
-| 对象 | 字段 |
-|---|---|
-| ticket | `id`（拍点-指纹）、`beat`、`fp`（图+what+配音文件+文案+say+poly 的指纹，变了旧单即过期）、`image`、`audio`、`what`、`text`、`asks`、`status`（open / clear / answered / stale） |
-| ask | `i` 下标、`k` 类型（text 有无文字 / swap 是不是本拍场景 / el 有无某元素 / vo 配音是不是这句 / poly 多音字读得对不对）、`q` 问题、`el` 或 `ch` |
-| answers | `answers[ticket][复核员] = {answers: {"0": "yes"}, at, note?}` |
-判定：text 题答 yes、其余题答 no 即「有问题」；多个复核员时，说有问题的人数 ≥ 说没问题的人数即判有问题，并记下反对者。
-每拍颜色：green 没问题（反射层直接放行或复核通过）/ red 有问题 / yellow 待复核或全是 unsure / grey 已过期。
-人（by=user）答过的单以人为准。doc 里某拍指纹变了即显示 grey；服务端保存后自动重新体检（`COCUT_REFLEX=0` 关闭），`POST /api/review/check` 手动触发。体检开出新单后，按 `<片子>/.cocut/reviewers.json`（`[{by, cmd?, args?, escalate?, off?}]`，args 透传给 tools/reviewer.py，如 `--jobs 4`、`--api URL --model M`）依次唤起复核员；`escalate: true` 只看当前红/黄的单。服务需在复核员能登录的环境（如 Mac 桌面会话）里启动。
-接口：`GET /api/review[?by=&second=1]`、`POST /api/review/open {report?}`、`POST /api/review/answer`；CLI `cli.py review open|list|answer|status`。
+## 复核 review（由插件 cocheck 维护）
+AI 智能审核（反射层体检、复核单、复核员链、统一模型接入口）已拆成独立插件 cocheck，数据在 `<片子>/.cocheck/`，规格见 cocheck 仓库 docs/API.md。
+cocut 侧只有：`server.py` 把 `GET /api/review`、`POST /api/review/check`、`POST /api/review/answer` 转发到 cocheck（`COCHECK_URL` 默认 `http://127.0.0.1:8796`，项目名 `COCHECK_PROJECT` 默认片子目录名，未登记时自动以 cocut 适配器登记）；`app/live.js` 画时间轴色带、可疑块框和「复核」面板；`cli.py review status|list|answer|check` 转发。
+cocheck 没开时，审片页的复核功能不显示，其余功能不受影响。
+
