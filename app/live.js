@@ -150,6 +150,7 @@ function overlay(b, t) {
     const a = b._s + b.vo.lead; if (t >= a) put('ttl', b.vo.text.split('。')[0], st.title_y || 520, st.title_size, { opacity: clamp((t - a) / 0.4, 0, 1) });
     if (b.caption && t >= a + 0.6) put('ttl2', b.caption, (st.title_y || 520) + 105, st.sub_size, { opacity: clamp((t - a - 0.6) / 0.5, 0, 1) });
   }
+  if (S.snap && !S.marks) { $('#hud').style.display = S.hud ? '' : 'none'; $('#hud').textContent = `${b.id}  ${b.role || ''}·${b.verb || ''}  ${fmt(t)}`; return; }
   for (const n of S.doc.notes) {
     if (n.status === 'done' || Math.abs(n.t - t) > 1.2) continue;
     const p = el('div', 'pin', n.id.replace('N', '')); p.style.left = n.x * 100 + '%'; p.style.top = n.y * 100 + '%';
@@ -524,7 +525,20 @@ async function exportFilm() {
   try { const r = await fetch('/live/export', { method: 'POST', body: '{}' }); const j = await r.json(); toast(j.error ? '导出失败：' + j.error : '导出已开始：' + (j.out || '')); }
   catch (e) { toast('导出接口没连上（审片室服务需要更新后重启）'); }
 }
+// 快照模式：#snap&t=12.3[&hud=1][&marks=1][&xf=0]——只画这一帧（和审片页同一套渲染），图和字体到齐后 document.title = 'READY'
+async function snapMain() {
+  const H = location.hash, q = (k) => (H.match(new RegExp('[#&]' + k + '=([^&]*)')) || [])[1];
+  document.body.classList.add('snap'); S.snap = true; S.hud = q('hud') === '1'; S.marks = q('marks') === '1'; S.xf = q('xf') !== '0';
+  S.doc = JSON.parse(await (await fetch('doc.json?ts=' + Date.now())).text()); layout();
+  const bt = q('beat') && S.doc.beats.find((b) => b.id === decodeURIComponent(q('beat')));
+  S.t = bt ? bt._s + bt.dur / 2 : clamp(+(q('t') || 0), 0, S.len - 0.001);
+  if (S.marks) await pollReview(true).catch(() => {});
+  const b = beatAt(S.t), nx = S.doc.beats[S.doc.beats.indexOf(b) + 1];
+  await Promise.all([b, nx].filter((x) => x && x.image).map((x) => new Promise((ok) => { img(x.image); const i = S.imgs[x.image]; if (i.complete) ok(); else { i.addEventListener('load', ok); i.addEventListener('error', ok); } })));
+  await document.fonts.ready; draw(); document.title = 'READY';
+}
 async function main() {
+  if (/[#&]snap\b/.test(location.hash)) return snapMain();
   const txt = await (await fetch('doc.json?ts=' + Date.now())).text(); lastDisk = txt; S.doc = pinSaid(JSON.parse(txt));
   const ls = localStorage.getItem('lan_live_doc');
   if (ls) { const l = JSON.parse(ls); if (l.saved && (!S.doc.saved || l.saved > S.doc.saved)) { S.doc = pinSaid(l); toast('接上你上次在浏览器里的改动'); } }
