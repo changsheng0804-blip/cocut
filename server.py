@@ -1,10 +1,13 @@
 # cocut 本地服务：把「片子目录」（doc.json + 素材）和交互页 app/ 一起端出来，并提供人和 AI 共用的接口。
-# 用法：python3 server.py <片子目录> [端口]      例：python3 server.py examples/lan 8790
-import json, os, sys, time, subprocess, mimetypes, threading
+# 用法：python3 server.py <片子目录> [端口] [--host 0.0.0.0]      例：python3 server.py examples/lan 8790
+#   默认只听本机；--host 或环境变量 COCUT_HOST 可对局域网/tailnet 开放（页面无鉴权，只在可信网络里开）。
+import json, os, sys, time, subprocess, mimetypes, threading, shutil
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote
 ROOT = os.path.dirname(os.path.abspath(__file__)); APP = os.path.join(ROOT, 'app')
-FILM = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'examples', 'lan'))
+ARGS = sys.argv[1:]; HOST = os.environ.get('COCUT_HOST', '127.0.0.1')
+if '--host' in ARGS: i = ARGS.index('--host'); HOST = ARGS[i + 1]; del ARGS[i:i + 2]
+FILM = os.path.abspath(ARGS[0] if ARGS else os.path.join(ROOT, 'examples', 'lan'))
 os.environ['COCUT_FILM'] = FILM; sys.path.insert(0, os.path.join(ROOT, 'cocut')); import api
 JOBS = {}
 # ---- AI 智能审核：交给独立插件 cocheck（https://github.com/changsheng0804-blip/cocheck），这里只做转发 ----
@@ -69,6 +72,16 @@ class H(BaseHTTPRequestHandler):
             except Exception as e: return self._json({'error': str(e)}, 500)
             data = open(out, 'rb').read(); os.remove(out); self.send_response(200); self.send_header('Content-Type', 'image/png')
             self.send_header('Cache-Control', 'no-store'); self.send_header('Content-Length', len(data)); self.end_headers(); return self.wfile.write(data)
+        if p == '/api/clipframe':                       # 片段某一时刻的一帧（JPEG）：快照模式用；?f=clips/x.mp4&t=2.0
+            from urllib.parse import parse_qs
+            q = {k: v[0] for k, v in parse_qs(u.query).items()}; f = os.path.normpath(os.path.join(FILM, q.get('f', '')))
+            if not f.startswith(FILM + os.sep) or not os.path.isfile(f): return self._json({'error': 'no clip'}, 404)
+            ff = shutil.which('ffmpeg')
+            if not ff: return self._json({'error': '没装 ffmpeg，快照用海报帧'}, 404)
+            data = subprocess.run([ff, '-v', 'error', '-ss', '%.3f' % float(q.get('t', 0)), '-i', f, '-frames:v', '1', '-f', 'image2pipe', '-vcodec', 'mjpeg', '-q:v', '3', '-'],
+                                  capture_output=True, timeout=30).stdout
+            if not data: return self._json({'error': 'ffmpeg 没抽出帧'}, 500)
+            self.send_response(200); self.send_header('Content-Type', 'image/jpeg'); self.send_header('Content-Length', len(data)); self.end_headers(); return self.wfile.write(data)
         if p.startswith('/api/job/'):
             j = JOBS.get(p.split('/')[-1]); return self._json(j and dict(running=j['p'].poll() is None, rc=j['p'].poll(), log=open(j['log']).read()[-3000:]) or {'error': 'no job'})
         rel = p.lstrip('/').removeprefix('live/') or 'index.html'
@@ -76,9 +89,16 @@ class H(BaseHTTPRequestHandler):
         for base in bases:
             f = os.path.normpath(os.path.join(base, rel))
             if f.startswith(base) and os.path.isfile(f):
-                data = open(f, 'rb').read(); self.send_response(200)
+                data = open(f, 'rb').read(); n = len(data); rg = self.headers.get('Range')    # 视频片段（clip）拖动要靠 Range
+                m = rg and __import__('re').match(r'bytes=(\d*)-(\d*)', rg)
+                if m and (m.group(1) or m.group(2)):
+                    a = int(m.group(1)) if m.group(1) else max(0, n - int(m.group(2))); z = int(m.group(2)) if m.group(1) and m.group(2) else n - 1
+                    z = min(z, n - 1); self.send_response(206); self.send_header('Content-Range', 'bytes %d-%d/%d' % (a, z, n)); data = data[a:z + 1]
+                else: self.send_response(200)
                 self.send_header('Content-Type', mimetypes.guess_type(f)[0] or 'application/octet-stream'); self.send_header('Cache-Control', 'no-store')
-                self.send_header('Content-Length', len(data)); self.end_headers(); return self.wfile.write(data)
+                self.send_header('Accept-Ranges', 'bytes'); self.send_header('Content-Length', len(data)); self.end_headers()
+                try: return self.wfile.write(data)
+                except (BrokenPipeError, ConnectionResetError): return
         if p in ('/', '/live', '/live/'): self.send_response(302); self.send_header('Location', '/live/index.html'); self.end_headers(); return
         self._json({'error': 'not found'}, 404)
     def do_POST(self):
@@ -103,6 +123,6 @@ class H(BaseHTTPRequestHandler):
         self._json({'error': 'unknown endpoint'}, 404)
 
 if __name__ == '__main__':
-    port = int(sys.argv[2]) if len(sys.argv) > 2 else 8790
-    print('cocut: http://localhost:%d/live/  片子：%s' % (port, FILM), flush=True)
-    ThreadingHTTPServer(('127.0.0.1', port), H).serve_forever()
+    port = int(ARGS[1]) if len(ARGS) > 1 else 8790
+    print('cocut: http://%s:%d/live/  片子：%s' % ('localhost' if HOST == '127.0.0.1' else HOST, port, FILM), flush=True)
+    ThreadingHTTPServer((HOST, port), H).serve_forever()
