@@ -13,6 +13,7 @@
 | style | `{sub_size, sub_plate, note_size, title_size, title_y}` 字幕与小字样式；title_y 为片名纵向位置（像素，默认 520，副标题在其下 +105） |
 | beats | 拍点数组（顺序即时间顺序） |
 | notes | 意见数组（人和 AI 同一格式） |
+| lexicon | 全片读音表 `[{w, say, py?, note?}]`：旁白里出现 w（原文片段，写带上下文的词）配音就念 say，字幕不变；py 为拼音要求 `{字: 拼音}`，交给复核员核对 |
 | rev, saved | 版本号与最后保存标记（页面据此自动刷新） |
 | look | 可选：画质阶梯记录（如 sketch → hq） |
 
@@ -27,7 +28,7 @@
 | role, verb | 叙事角色与动作（如 证据·提速） |
 | what | 画面要表达什么（给生成模型和审片者看） |
 | hero | 关键拍：自动重排时间时不让时长 |
-| vo | `{text, say, file, dur, lead, words:[{t,d,w}]}` 旁白；lead 为拍内起点；words 为字级时间；say 可选，为配音时实际朗读的文本（纠正多音字，如「六百万航老代码」），字幕与片名仍显示 text |
+| vo | `{text, say, file, dur, lead, words:[{t,d,w}]}` 旁白；lead 为拍内起点；words 为字级时间；say 可选，单拍手动指定配音念的文本（覆盖读音表）；said 为上次配音实际念的（配音接口回填）。该念的 = say 或「读音表套到 text」，和 said 不一样即配音过期；字幕与片名仍显示 text |
 | vo_style | 配音语气说明 |
 | caption | 画面小字 |
 | title | 是否片名拍（旁白第一句作片名，caption 作副标题） |
