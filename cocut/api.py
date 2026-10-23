@@ -64,6 +64,8 @@ def tts(body, voice='zh-CN-YunxiNeural'):
 # kind：image（这拍的原图）/ sub（旁白字幕，改 vo.text）/ caption（画面小字）/ title、title2（片名、副标题）
 # 几何和 app/live.js overlay() 一致；页面里点击用 DOM 精确命中，这里给 API/命令行用，按字号估算文字框。
 LAYER_SRC = {'sub': 'vo.text', 'caption': 'caption', 'title': 'vo.text', 'title2': 'caption'}
+def title_ov(b): return bool(b.get('title')) and not b.get('title_in_image')      # 片名画在图里时不再叠字
+def title_text(b): return b.get('title_text') or ((b.get('vo') or {}).get('text') or '').split('。')[0]
 def _tw(text, size): return sum(size if ord(c) > 0x2e80 else size * 0.55 for c in text)
 def layer_at(doc, t, x, y):
     st = doc.get('style') or {}; s = 0; bs = doc['beats']
@@ -74,18 +76,20 @@ def layer_at(doc, t, x, y):
     def box(kind, text, cy, size, padx, pady):
         w = _tw(text, size) + 2 * padx * size; h = size * (1.25 + 2 * pady)
         boxes.append((kind, abs(X - 960) <= w / 2 + 20 and abs(Y - cy) <= h / 2 + 15))
-    if vo and not b.get('title'):
+    if vo and not title_ov(b):
         a = s + vo.get('lead', 0)
         if a <= t <= a + vo.get('dur', 0): box('sub', vo['text'].rstrip('。'), 1000, st.get('sub_size', 40), .55, .12)
-    if b.get('caption') and not b.get('title') and s + 0.5 <= t <= e - 0.2: box('caption', b['caption'], 110, st.get('note_size', 30), .6, .18)
-    if b.get('title') and vo:
-        a = s + vo.get('lead', 0); ty = st.get('title_y', 520)
-        if t >= a: box('title', vo['text'].split('。')[0], ty, st.get('title_size', 96), .1, 0)
+    if b.get('caption') and not title_ov(b) and s + 0.5 <= t <= e - 0.2: box('caption', b['caption'], 110, st.get('note_size', 30), .6, .18)
+    if title_ov(b) and title_text(b):
+        a = s + vo.get('lead', 0.3); ty = st.get('title_y', 520)
+        if t >= a: box('title', title_text(b), ty, st.get('title_size', 96), .1, 0)
         if b.get('caption') and t >= a + 0.6: box('title2', b['caption'], ty + 105, st.get('sub_size', 40), .1, 0)
     for kind, hit in boxes:
-        if hit: return dict(kind=kind, beat=b['id'], src=LAYER_SRC[kind])
+        if hit: return dict(kind=kind, beat=b['id'], src='title_text' if kind == 'title' and b.get('title_text') else LAYER_SRC[kind])
     nx = bs[i + 1] if i + 1 < len(bs) else None
     if nx and e - t < 0.25 and 1 - (e - t) / 0.25 > 0.5: b = nx          # 交叉淡化后半段，看到的主要是下一拍的图
+    if (b.get('clip') or {}).get('file'):                                     # 真实渲染片段：给出片段内的时间
+        c = b['clip']; return dict(kind='clip', beat=b['id'], src=c['file'], at=round(min(c.get('out', 1e9), c.get('in', 0) + (t - s) * c.get('rate', 1)), 3))
     return dict(kind='image', beat=b['id'], src=b.get('image') or '')
 def to_plan(doc):
     t = 0; plan = {'title': doc['title'], 'fps': doc['fps'], 'width': doc['width'], 'height': doc['height'], 'one_thing': doc.get('one_thing', ''),
@@ -93,14 +97,16 @@ def to_plan(doc):
                    'vo_gain': doc.get('vo_gain', 1), 'style': doc.get('style', {})}
     for b in doc['beats']:
         s, e = t, t + b['dur']; t = e
-        plan['beats'].append(dict(id=b['id'], start=s, end=e, image=b.get('image'), move=b.get('move', 'static'), role=b.get('role'), verb=b.get('verb'), dim=b.get('dim', 0)))
+        plan['beats'].append(dict(id=b['id'], start=s, end=e, image=b.get('image'), move=b.get('move', 'static'), role=b.get('role'), verb=b.get('verb'), dim=b.get('dim', 0),
+                                  **({'clip': b['clip']} if b.get('clip') else {})))
         if b.get('vo') and b['vo'].get('file'):
             v = b['vo']; vs = s + v['lead']
             plan['vo'].append(dict(id=b['id'], file=v['file'], start=vs, dur=v['dur'], text=v['text'], said=said(b)))
-            if b.get('title'): plan['title_card'] = dict(text=v['text'].split('。')[0], start=vs, end=None)
-            else: plan['subs'].append(dict(id='S' + b['id'], start=vs, end=vs + v['dur'], text=v['text'].rstrip('。'), kind='vo'))
+            if title_ov(b): plan['title_card'] = dict(text=title_text(b), start=vs, end=None)
+            if not title_ov(b): plan['subs'].append(dict(id='S' + b['id'], start=vs, end=vs + v['dur'], text=v['text'].rstrip('。'), kind='vo'))
+        elif title_ov(b) and title_text(b): plan['title_card'] = dict(text=title_text(b), start=s + 0.3, end=None)
         for x in b.get('sfx') or []: plan['sfx'].append(dict(id=b['id'], file=x['file'], start=s + x.get('at', 0), gain=x.get('gain', 1)))
-        if b.get('caption'): plan['notes'].append(dict(id='N' + b['id'], start=s + 0.5, end=e - 0.2, text=b['caption'], kind='title' if b.get('title') else 'note'))
+        if b.get('caption'): plan['notes'].append(dict(id='N' + b['id'], start=s + 0.5, end=e - 0.2, text=b['caption'], kind='title' if title_ov(b) else 'note'))
     plan['length'] = t
     if 'title_card' in plan: plan['title_card']['end'] = t
     return plan
