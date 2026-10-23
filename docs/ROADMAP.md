@@ -7,7 +7,8 @@
 - [x] 通用复核员适配器 `tools/reviewer.py`（领单→调任意 AI 命令行→交答案），Gemini 已实测：13 张单 309 秒，单张约 55 秒。
 - [x] 改动后自动唤起复核员：`<片子>/.cocut/reviewers.json` 按序执行，快模型答全部、`escalate` 的强模型只复核红/黄（例：examples/reviewers.example.json）。改回旧版本自动恢复原判。
 - [x] 复核员提速：`--jobs N` 并发（代理拆份/接口并发）+ `--api` 直连 generateContent（无代理来回）+ 429 指数退避。12 张单：agy Flash 644→178 秒；Gemini 4 直连 149 秒（逐张）/约 100 秒（并发，受 Vertex 配额限流，额度充足时 31 秒）；答案与原来 17–19/19 一致。
-- [ ] 云端大模型领单、MCP 工具。
+- [x] AI 智能审核拆成独立插件 cocheck：统一模型接入口（embed/ask 两种能力；local_embed、gemini、openai 兼容、cli 代理、remote）、适配器（cocut/items/folder）、HTTP /v1 + CLI + 可嵌入色带组件；cocut 只做转发和画面。
+- [ ] 云端大模型领单、MCP 工具（在 cocheck 里做）。
 - [~] **局部发音修正**（《懒》N13，已在示例修复）：`vo.say` 记录配音替换文本，`/api/tts` 支持 say、只重配这一拍。待做：全片读音表（多音字词典）自动套用、界面上编辑 say。
 - [x] **4a 音频出错排查**（《懒》N14，已修复）：`tools/mixdown.py` 离线混音后定位为 duck=0 造成 55.0–56.6 秒纯数字静音，改 duck 0.12 + 急停音余尾。
 - [ ] **导出端直接用 mixdown 音轨**：render/concat.py 不再自己摆配乐/旁白/音效，改为铺一条 mixdown.py 生成的成品音轨，浏览器与导出声音完全一致，顺带解决导出端 duck。
