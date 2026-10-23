@@ -40,7 +40,7 @@ def _reviewers_loop():
         for r in cfg:
             if r.get('off'): continue
             REVIEW['who'] = r['by']
-            a = [sys.executable, os.path.join(ROOT, 'tools', 'reviewer.py'), '--server', 'http://127.0.0.1:%d' % PORT, '--by', r['by'], '--cmd', r['cmd']]
+            a = [sys.executable, os.path.join(ROOT, 'tools', 'reviewer.py'), '--server', 'http://127.0.0.1:%d' % PORT, '--by', r['by']] + (['--cmd', r['cmd']] if r.get('cmd') else []) + [str(x) for x in r.get('args', [])]
             if r.get('escalate'): a.append('--escalate')
             p = subprocess.run(a, capture_output=True, text=True)
             REVIEW.update(last=time.strftime('%H:%M:%S') + ' ' + (p.stdout.strip().splitlines() or [''])[-1][:200], error=None if p.returncode == 0 else (p.stderr or p.stdout)[-300:])
