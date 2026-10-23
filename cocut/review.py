@@ -75,7 +75,10 @@ def open_tickets(film, report=None):
         for old in db['tickets'].values():                       # 同一拍的旧单，指纹不同 → 过期
             if old['beat'] == b['id'] and old['fp'] != fp and old['status'] != 'stale':
                 old['status'] = 'stale'; out['stale'].append(old['id'])
-        if tid in db['tickets'] and db['tickets'][tid]['status'] != 'stale':
+        if tid in db['tickets']:
+            t = db['tickets'][tid]
+            if t['status'] == 'stale':                               # 改回了以前的版本 → 恢复原判，不必重新复核
+                t['status'] = 'answered' if db['answers'].get(tid) else ('open' if t['asks'] else 'clear')
             out['kept'].append(tid); continue
         asks = asks_for(b, R[b['id']])
         db['tickets'][tid] = dict(id=tid, beat=b['id'], fp=fp, created=now, image=b.get('image'),
