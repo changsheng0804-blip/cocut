@@ -9,15 +9,13 @@
 4. **回复意见**：改完把对应 note 的 status 设为 done，写 reply 和 by_fix。
 
 ## 领复核单（点名复核）
-反射层每次改动后自动体检，把可疑处开成「复核单」：哪张图、哪条配音、问哪几个是非题。你只需要答这几题。
-1. 领单：`GET /api/review?by=<你的名字>` 的 `open`，或 `cli.py review list --by <你的名字>`。
-   每张单有 `image`、`audio`（片子目录里的相对路径，服务端可在 `/live/<路径>` 取到）、`what`、`text` 和 `asks`。
-2. 答题：每题只答 `yes` / `no` / `unsure`，键是 `asks[].i`。
-   `POST /api/review/answer {"ticket": "3b-8e6abd7068", "by": "<你的名字>", "answers": {"0": "no"}, "note": "可选的一句理由"}`
+AI 智能审核由独立插件 **cocheck** 负责（体检、复核单、复核员链、统一模型接入口），cocut 只把它的结果画在审片页上。
+cocheck 监视 doc.json，每次改动自动体检，把可疑处开成「复核单」：哪张图、哪条配音、问哪几个是非题。你只需要答这几题。
+1. 领单：`GET http://127.0.0.1:8796/v1/projects/<片子>/tickets?by=<你的名字>`（或 `cli.py review list --by <你的名字>`）。图/音给的是 URL。
+2. 逐题只答 `yes` / `no` / `unsure`，只看点名的那一处，不评价别的。
+3. 交卷：`POST /v1/projects/<片子>/answer {"ticket": "3b-8e6abd7068", "by": "<你的名字>", "answers": {"0": "no"}, "note": "可选的一句理由"}`
    或 `cli.py review answer 3b-8e6abd7068 --by <你的名字> '{"0":"no"}'`。
-3. 只看点名的那一处，不评价别的；看不到/听不到就答 `unsure`，不要猜。
-4. 单子过期（409）说明素材或文案已改，等新体检出新单。
-自动领单：`python3 tools/reviewer.py --server http://localhost:8790 --by <名字> --cmd '<你的命令行> {prompt}'`，适配器负责下载图/音、出题、收答案、交回。
+单号随素材/文案指纹变化，过期的单会被拒（409），重新领即可。接口全文见 cocheck 仓库 docs/API.md。
 想要更全面的意见，照旧用 `/api/note` 留言；复核单只做是非判断。
 
 ## 规矩
