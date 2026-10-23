@@ -30,3 +30,19 @@ class Layer(unittest.TestCase):
         self.assertEqual(api.layer_at(d, 3.95, 0.5, 0.5)['beat'], 'b')      # 交叉淡化后半段算下一拍
 
 if __name__ == '__main__': unittest.main()
+
+class Feedback(unittest.TestCase):                          # 雪人片头试用：片名画在图里、真实片段
+    def doc(self):
+        return dict(title='t', fps=24, width=1280, height=720, style=dict(title_size=96), beats=[
+            dict(id='a', dur=3, image='a.jpg', clip=dict(file='c.mp4', **{'in': 10, 'out': 12})),
+            dict(id='b', dur=2, image='b.jpg', title=True, title_in_image=True, title_text='雪人小镇物语', vo=dict(text='旁白。', lead=0.2, dur=1, file='v.mp3')),
+            dict(id='c', dur=2, image='c.jpg', title=True, title_text='片名')])
+    def test_clip_layer(self):
+        L = api.layer_at(self.doc(), 1.5, 0.5, 0.5); self.assertEqual((L['kind'], L['src'], L['at']), ('clip', 'c.mp4', 11.5))
+        self.assertEqual(api.layer_at(self.doc(), 2.6, 0.3, 0.3)['at'], 12)       # 超过 out 停在最后一帧
+    def test_title_in_image(self):
+        d = self.doc(); plan = api.to_plan(d)
+        self.assertEqual(plan['title_card']['text'], '片名')                       # 画内片名不叠字，只有 c 叠
+        self.assertEqual([s['id'] for s in plan['subs']], ['Sb'])                  # b 按普通拍出字幕
+        self.assertEqual(plan['beats'][0]['clip']['file'], 'c.mp4')
+        self.assertEqual(api.layer_at(d, 6, 0.5, 520 / 1080)['src'], 'title_text')
