@@ -25,6 +25,30 @@ def _check_loop():
             review.open_tickets(FILM, rep); CHECK.update(last=time.strftime('%H:%M:%S'), seconds=rep['seconds'], error=None)
         except Exception as e: CHECK['error'] = '%s: %s' % (type(e).__name__, e)
     CHECK['running'] = False
+    if CHECK['error'] is None and review.list_open(FILM): request_reviewers()
+
+PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8790
+REVIEW = dict(running=False, pending=False, who=None, last=None, error=None)
+
+def _reviewers_loop():
+    """按 <片子>/.cocut/reviewers.json 依次唤起复核员：先快模型答全部新单，再让 escalate 的强模型只复核红/黄的。"""
+    import subprocess
+    while REVIEW['pending']:
+        REVIEW['pending'] = False
+        try: cfg = json.load(open(os.path.join(review._dir(FILM), 'reviewers.json'), encoding='utf-8'))
+        except Exception: cfg = []
+        for r in cfg:
+            if r.get('off'): continue
+            REVIEW['who'] = r['by']
+            a = [sys.executable, os.path.join(ROOT, 'tools', 'reviewer.py'), '--server', 'http://127.0.0.1:%d' % PORT, '--by', r['by'], '--cmd', r['cmd']]
+            if r.get('escalate'): a.append('--escalate')
+            p = subprocess.run(a, capture_output=True, text=True)
+            REVIEW.update(last=time.strftime('%H:%M:%S') + ' ' + (p.stdout.strip().splitlines() or [''])[-1][:200], error=None if p.returncode == 0 else (p.stderr or p.stdout)[-300:])
+    REVIEW.update(running=False, who=None)
+
+def request_reviewers():
+    REVIEW['pending'] = True
+    if not REVIEW['running']: REVIEW['running'] = True; threading.Thread(target=_reviewers_loop, daemon=True).start()
 
 def request_check():
     CHECK['pending'] = True
@@ -59,7 +83,7 @@ class H(BaseHTTPRequestHandler):
         if p == '/api/plan': return self._json(api.to_plan(doc()))
         if p == '/api/review':                          # 每拍颜色 + 待复核的单；?by=gemini 去掉它答过的
             from urllib.parse import parse_qs; q = parse_qs(u.query); by = (q.get('by') or [None])[0]
-            return self._json(dict(status=review.status(FILM), open=review.list_open(FILM, by, bool(q.get('second'))), check=CHECK))
+            return self._json(dict(status=review.status(FILM), open=review.list_open(FILM, by, bool(q.get('second'))), check=CHECK, reviewers=REVIEW))
         if p.startswith('/api/job/'):
             j = JOBS.get(p.split('/')[-1]); return self._json(j and dict(running=j['p'].poll() is None, rc=j['p'].poll(), log=open(j['log']).read()[-3000:]) or {'error': 'no job'})
         rel = p.lstrip('/').removeprefix('live/') or 'index.html'
@@ -100,6 +124,6 @@ class H(BaseHTTPRequestHandler):
         self._json({'error': 'unknown endpoint'}, 404)
 
 if __name__ == '__main__':
-    port = int(sys.argv[2]) if len(sys.argv) > 2 else 8790
+    port = PORT
     print('cocut: http://localhost:%d/live/  片子：%s' % (port, FILM), flush=True)
     ThreadingHTTPServer(('127.0.0.1', port), H).serve_forever()
