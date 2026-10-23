@@ -12,15 +12,16 @@ JOBS = {}
 import urllib.request, urllib.error
 COCHECK = os.environ.get('COCHECK_URL', 'http://127.0.0.1:8796').rstrip('/')
 CPROJ = os.environ.get('COCHECK_PROJECT') or os.path.basename(FILM.rstrip('/'))
+CHDR = {'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + os.environ['COCHECK_TOKEN']} if os.environ.get('COCHECK_TOKEN') else {})}
 
 def cocheck(path, body=None, retry=True):
     url = '%s/v1/projects/%s%s' % (COCHECK, CPROJ, path)
-    req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
+    req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers=CHDR)
     try: return json.load(urllib.request.urlopen(req, timeout=30)), 200
     except urllib.error.HTTPError as e:
         if e.code == 404 and retry:                      # 项目还没登记 → 自动登记这部片子
             try:
-                r = urllib.request.Request(COCHECK + '/v1/projects', data=json.dumps(dict(name=CPROJ, adapter='cocut', path=FILM)).encode(), headers={'Content-Type': 'application/json'})
+                r = urllib.request.Request(COCHECK + '/v1/projects', data=json.dumps(dict(name=CPROJ, adapter='cocut', path=FILM)).encode(), headers=CHDR)
                 urllib.request.urlopen(r, timeout=30); return cocheck(path, body, False)
             except Exception: pass
         try: return json.load(e), e.code
