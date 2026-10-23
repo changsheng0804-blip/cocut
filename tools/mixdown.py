@@ -21,8 +21,8 @@ mb = mb[:n]; tt = np.arange(n) / SR
 k = np.clip(np.minimum(tt / max(m.get('fade_in', 0.01), 1e-3), (L - tt) / max(m.get('fade_out', 0.01), 1e-3)), 0, 1)
 for b in d['beats']:
     if b.get('duck') is None: continue
-    r = b.get('duck_release') or 0.8; du = b['duck']; dd = np.ones(n)
-    s1 = (tt >= b['_s'] - 0.04) & (tt < b['_s']); dd[s1] = 1 - (tt[s1] - b['_s'] + 0.04) / 0.04 * (1 - du)
+    r = b.get('duck_release') or 0.8; a = b.get('duck_attack') or 0.04; du = b['duck']; dd = np.ones(n)
+    s1 = (tt >= b['_s'] - a) & (tt < b['_s']); dd[s1] = 1 - (tt[s1] - b['_s'] + a) / a * (1 - du)
     s2 = (tt >= b['_s']) & (tt < b['_e']); dd[s2] = du
     s3 = (tt >= b['_e']) & (tt < b['_e'] + r); dd[s3] = du + (tt[s3] - b['_e']) / r * (1 - du)
     k *= np.clip(dd, 0, 1)
