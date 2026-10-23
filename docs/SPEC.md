@@ -59,4 +59,5 @@
 | answers | `answers[ticket][复核员] = {answers: {"0": "yes"}, at, note?}` |
 判定：text 题答 yes、其余题答 no 即「有问题」；多个复核员时，说有问题的人数 ≥ 说没问题的人数即判有问题，并记下反对者。
 每拍颜色：green 没问题（反射层直接放行或复核通过）/ red 有问题 / yellow 待复核或全是 unsure / grey 已过期。
+人（by=user）答过的单以人为准。doc 里某拍指纹变了即显示 grey；服务端保存后自动重新体检（`COCUT_REFLEX=0` 关闭），`POST /api/review/check` 手动触发。
 接口：`GET /api/review[?by=&second=1]`、`POST /api/review/open {report?}`、`POST /api/review/answer`；CLI `cli.py review open|list|answer|status`。
