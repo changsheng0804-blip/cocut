@@ -8,7 +8,8 @@
 | title, fps, width, height | 片名与输出规格 |
 | target | 目标总长（秒） |
 | one_thing | 这部片子只想让人记住的一句话（所有参与者对齐的锚） |
-| music | `{file, gain, fade_in, fade_out}` 配乐 |
+| music | `{file, gain, fade_in, fade_out}` 配乐；可为空（只有旁白） |
+| voice, made_from | 可选：默认配音音色；草稿由哪份脚本生成（`cli.py new`） |
 | vo_gain | 旁白整体增益 |
 | style | `{sub_size, sub_plate, note_size, title_size, title_y}` 字幕与小字样式；title_y 为片名纵向位置（像素，默认 520，副标题在其下 +105） |
 | beats | 拍点数组（顺序即时间顺序） |
