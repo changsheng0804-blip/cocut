@@ -40,7 +40,7 @@ elif a.cmd == 'review':
     import urllib.request
     U = os.environ.get('COCHECK_URL', 'http://127.0.0.1:8796').rstrip('/') + '/v1/projects/' + (os.environ.get('COCHECK_PROJECT') or os.path.basename(os.environ['COCUT_FILM'].rstrip('/')))
     def http(path, body=None):
-        r = urllib.request.Request(U + path, data=None if body is None else json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
+        r = urllib.request.Request(U + path, data=None if body is None else json.dumps(body).encode(), headers={'Content-Type': 'application/json', **({'Authorization': 'Bearer ' + os.environ['COCHECK_TOKEN']} if os.environ.get('COCHECK_TOKEN') else {})})
         return json.load(urllib.request.urlopen(r, timeout=60))
     sub = (a.args or ['status'])[0]
     if sub == 'status':
