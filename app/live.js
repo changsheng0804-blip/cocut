@@ -390,12 +390,12 @@ function rvLine(rs) {
 }
 function renderRvSum() {
   const v = Object.values(S.rv.status), n = (c) => v.filter((x) => x.color === c).length, s = $('#rvsum'); if (!v.length) { s.style.display = 'none'; return; }
-  s.style.display = ''; s.innerHTML = `复核 <b class="cG">${n('green')}</b>绿 <b class="cR">${n('red')}</b>红 <b class="cY">${n('yellow')}</b>待 ${n('grey') ? `<b class="cN">${n('grey')}</b>重查` : ''}${S.rv.check.running ? ' · 体检中…' : ''}`;
+  s.style.display = ''; s.innerHTML = `复核 <b class="cG">${n('green')}</b>绿 <b class="cR">${n('red')}</b>红 <b class="cY">${n('yellow')}</b>待 ${n('grey') ? `<b class="cN">${n('grey')}</b>重查` : ''}${S.rv.check.running ? ' · 体检中…' : (S.rv.reviewers || {}).who ? ` · ${RVNAME(S.rv.reviewers.who)} 复核中…` : ''}`;
   s.onclick = () => { S.tab = 'review'; renderSide(); };
 }
 async function pollReview(force) {
   try {
-    const j = await (await fetch('/api/review')).json(); if (!j.status) return; const k = JSON.stringify([j.status, j.check.running, j.check.error]);
+    const j = await (await fetch('/api/review')).json(); if (!j.status) return; const k = JSON.stringify([j.status, j.check.running, j.check.error, (j.reviewers || {}).who]);
     if (!force && k === S.rvKey) return; S.rv = j; S.rvKey = k; renderTL(); renderRvSum(); frame();
     if (['review', 'beat'].includes(S.tab) && !$('#panel').contains(document.activeElement)) renderSide();
   } catch (e) {}
@@ -410,6 +410,7 @@ function reviewPanel(p) {
   hd.append(el('span', 'muted', c.running ? '反射层体检中…' : c.error ? '体检出错：' + c.error : c.last ? `上次体检 ${c.last}，用时 ${c.seconds}s` : '还没有体检'),
     btn('重新体检', 'small', async () => { await fetch('/api/review/check', { method: 'POST', body: '{}' }); toast('开始体检'); pollReview(true); }));
   p.appendChild(hd);
+  const rr = S.rv.reviewers || {}; if (rr.who || rr.last || rr.error) p.appendChild(el('div', 'muted', rr.who ? `${RVNAME(rr.who)} 正在复核…` : rr.error ? '复核员出错：' + rr.error : '上次复核：' + rr.last));
   p.appendChild(el('div', 'muted', '反射层先筛，可疑处出是非题给 AI 复核；你只需看红的和有分歧的。你的判断是最终的。'));
   const order = { red: 0, yellow: 1, grey: 2, green: 3 }, rows = S.doc.beats.filter((b) => S.rv.status[b.id]).sort((a, b) => order[S.rv.status[a.id].color] - order[S.rv.status[b.id].color]);
   let greens = 0;
