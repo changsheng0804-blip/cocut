@@ -8,6 +8,8 @@
 #   python3 cocut/cli.py lex rm 六百万行   |   lex list
 #   python3 cocut/cli.py say 2c "六百万航老代码"      （单拍覆盖；say 2c --clear 去掉，回到读音表）
 #   python3 cocut/cli.py voice stale | voice 2c          按当前读法重新配音（需要 edge-tts）
+# 画面快照（审片页同一套渲染截一帧 PNG，需要 cocut 服务在跑、本机有 Chrome；服务地址 COCUT_URL，默认 http://127.0.0.1:8790）：
+#   python3 cocut/cli.py frame 12.3 -o f.png | frame 2c | frame all --dir shots/ [--hud] [--width 960]
 # AI 智能审核已拆成独立插件 cocheck（体检、复核单、复核员、统一模型接入口），这里只转发到它的 HTTP 服务：
 #   python3 cocut/cli.py review status | list --by gemini | answer <单号> --by gemini '{"0":"no"}' | check
 #   更多（换模型、并发、远端模型）直接用 cocheck 命令行，见 cocheck 仓库 README。
@@ -16,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('args', nargs='*')
 ap.add_argument('--film', default=os.environ.get('COCUT_FILM', '.')); ap.add_argument('--beat'); ap.add_argument('--t', type=float)
 ap.add_argument('--by', default='user'); ap.add_argument('--dim'); ap.add_argument('--sev', type=int); ap.add_argument('--fix')
-ap.add_argument('--second', action='store_true'); ap.add_argument('--py', action='append', default=[]); ap.add_argument('--note'); ap.add_argument('--clear', action='store_true')
+ap.add_argument('--second', action='store_true'); ap.add_argument('--py', action='append', default=[]); ap.add_argument('--note'); ap.add_argument('--clear', action='store_true'); ap.add_argument('-o', '--out'); ap.add_argument('--dir', default='.'); ap.add_argument('--hud', action='store_true'); ap.add_argument('--width', type=int, default=1920)
 a = ap.parse_intermixed_args(); os.environ['COCUT_FILM'] = os.path.abspath(a.film); import api
 P = os.path.join(os.environ['COCUT_FILM'], 'doc.json'); d = api.pin_said(json.load(open(P, encoding='utf-8')))
 def save(by): d['saved'] = time.strftime('%Y-%m-%dT%H:%M:%S') + '-' + by; print(api.save(d)[0])
@@ -73,6 +75,14 @@ elif a.cmd == 'voice':
         r, code = api.voice(d, bid); print(bid, '✓ %ss 念：%s' % (r['dur'], r['said']) if code == 200 else '✗ ' + str(r))
     if ids: save(a.by)
     else: print('没有过期的配音')
+elif a.cmd == 'frame':
+    import snap; U = os.environ.get('COCUT_URL', 'http://127.0.0.1:8790'); w = (a.args or ['all'])[0]
+    ids = [b['id'] for b in d['beats']]
+    if w == 'all':
+        os.makedirs(a.dir, exist_ok=True)
+        for bid in ids: print(snap.shot(U, os.path.join(a.dir, 'frame_%s.png' % bid), beat=bid, hud=a.hud, width=a.width))
+    elif w in ids: print(snap.shot(U, a.out or 'frame_%s.png' % w, beat=w, hud=a.hud, width=a.width))
+    else: print(snap.shot(U, a.out or 'frame_%s.png' % w, t=float(w), hud=a.hud, width=a.width))
 elif a.cmd == 'review':
     import urllib.request
     U = os.environ.get('COCHECK_URL', 'http://127.0.0.1:8796').rstrip('/') + '/v1/projects/' + (os.environ.get('COCHECK_PROJECT') or os.path.basename(os.environ['COCUT_FILM'].rstrip('/')))
