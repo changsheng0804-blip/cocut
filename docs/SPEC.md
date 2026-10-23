@@ -33,7 +33,7 @@
 | caption | 画面小字 |
 | title | 是否片名拍（旁白第一句作片名，caption 作副标题） |
 | dim | 压暗程度 0–1 |
-| duck, duck_release | 配乐骤降（如急停拍）；duck 为保留的配乐比例，0 即全静音，慎用（《懒》N14 的成因） |
+| duck, duck_attack, duck_release | 配乐骤降（如急停拍）；duck 为保留的配乐比例，0 即全静音；duck_attack 下压用时（默认 0.04s），duck_release 拍点结束后回升用时（默认 0.8s）。压到 30% 以下且没有旁白/音效超过 0.6s，检查会标红「听起来像断了」（《懒》N14、N15 的成因） |
 | sfx | `[{file, at, gain}]` 音效，at 为拍内偏移（可为负） |
 
 ## 意见 note
