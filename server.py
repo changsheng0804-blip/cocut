@@ -5,54 +5,27 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote
 ROOT = os.path.dirname(os.path.abspath(__file__)); APP = os.path.join(ROOT, 'app')
 FILM = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'examples', 'lan'))
-os.environ['COCUT_FILM'] = FILM; sys.path.insert(0, os.path.join(ROOT, 'cocut')); import api, review
+os.environ['COCUT_FILM'] = FILM; sys.path.insert(0, os.path.join(ROOT, 'cocut')); import api
 JOBS = {}
-import threading
-CHECK = dict(running=False, pending=False, last=None, seconds=None, error=None, auto=os.environ.get('COCUT_REFLEX', '1') != '0'); RX = {}
-_rp = os.path.join(FILM, '.cocut', 'reflex.json')
-if os.path.exists(_rp):                                   # 服务重启后接上上次体检的时间
-    try: CHECK.update(last=time.strftime('%m-%d %H:%M', time.localtime(os.path.getmtime(_rp))), seconds=json.load(open(_rp)).get('seconds'))
-    except Exception: pass
+# ---- AI 智能审核：交给独立插件 cocheck（https://github.com/changsheng0804-blip/cocheck），这里只做转发 ----
+# cocheck 自己监视 doc.json：一保存就体检、开单、唤起复核员。没开 cocheck 服务时页面上的复核功能静默不显示。
+import urllib.request, urllib.error
+COCHECK = os.environ.get('COCHECK_URL', 'http://127.0.0.1:8796').rstrip('/')
+CPROJ = os.environ.get('COCHECK_PROJECT') or os.path.basename(FILM.rstrip('/'))
 
-def _check_loop():
-    """后台体检：反射层（按内容哈希缓存，只重算改过的拍）→ 开复核单。保存期间又有改动就再跑一轮。"""
-    while CHECK['pending']:
-        CHECK['pending'] = False
-        try:
-            sys.path.insert(0, os.path.join(ROOT, 'tools')); import reflex
-            if 'rx' not in RX: RX['rx'] = reflex.Reflex(cache=os.path.join(FILM, '.reflex_cache'))
-            rep = reflex.check_film(FILM, os.path.join(review._dir(FILM), 'reflex.json'), RX['rx'])
-            review.open_tickets(FILM, rep); CHECK.update(last=time.strftime('%H:%M:%S'), seconds=rep['seconds'], error=None)
-        except Exception as e: CHECK['error'] = '%s: %s' % (type(e).__name__, e)
-    CHECK['running'] = False
-    if CHECK['error'] is None and review.list_open(FILM): request_reviewers()
-
-PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8790
-REVIEW = dict(running=False, pending=False, who=None, last=None, error=None)
-
-def _reviewers_loop():
-    """按 <片子>/.cocut/reviewers.json 依次唤起复核员：先快模型答全部新单，再让 escalate 的强模型只复核红/黄的。"""
-    import subprocess
-    while REVIEW['pending']:
-        REVIEW['pending'] = False
-        try: cfg = json.load(open(os.path.join(review._dir(FILM), 'reviewers.json'), encoding='utf-8'))
-        except Exception: cfg = []
-        for r in cfg:
-            if r.get('off'): continue
-            REVIEW['who'] = r['by']
-            a = [sys.executable, os.path.join(ROOT, 'tools', 'reviewer.py'), '--server', 'http://127.0.0.1:%d' % PORT, '--by', r['by']] + (['--cmd', r['cmd']] if r.get('cmd') else []) + [str(x) for x in r.get('args', [])]
-            if r.get('escalate'): a.append('--escalate')
-            p = subprocess.run(a, capture_output=True, text=True)
-            REVIEW.update(last=time.strftime('%H:%M:%S') + ' ' + (p.stdout.strip().splitlines() or [''])[-1][:200], error=None if p.returncode == 0 else (p.stderr or p.stdout)[-300:])
-    REVIEW.update(running=False, who=None)
-
-def request_reviewers():
-    REVIEW['pending'] = True
-    if not REVIEW['running']: REVIEW['running'] = True; threading.Thread(target=_reviewers_loop, daemon=True).start()
-
-def request_check():
-    CHECK['pending'] = True
-    if not CHECK['running']: CHECK['running'] = True; threading.Thread(target=_check_loop, daemon=True).start()
+def cocheck(path, body=None, retry=True):
+    url = '%s/v1/projects/%s%s' % (COCHECK, CPROJ, path)
+    req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
+    try: return json.load(urllib.request.urlopen(req, timeout=30)), 200
+    except urllib.error.HTTPError as e:
+        if e.code == 404 and retry:                      # 项目还没登记 → 自动登记这部片子
+            try:
+                r = urllib.request.Request(COCHECK + '/v1/projects', data=json.dumps(dict(name=CPROJ, adapter='cocut', path=FILM)).encode(), headers={'Content-Type': 'application/json'})
+                urllib.request.urlopen(r, timeout=30); return cocheck(path, body, False)
+            except Exception: pass
+        try: return json.load(e), e.code
+        except Exception: return {'error': 'cocheck %d' % e.code}, e.code
+    except Exception as e: return {'error': 'cocheck 服务没连上（%s）：%s' % (COCHECK, e)}, 503
 
 def doc(): return json.load(open(os.path.join(FILM, 'doc.json'), encoding='utf-8'))
 
@@ -81,9 +54,8 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path); p = unquote(u.path)
         if p == '/api/doc': return self._json(doc())
         if p == '/api/plan': return self._json(api.to_plan(doc()))
-        if p == '/api/review':                          # 每拍颜色 + 待复核的单；?by=gemini 去掉它答过的
-            from urllib.parse import parse_qs; q = parse_qs(u.query); by = (q.get('by') or [None])[0]
-            return self._json(dict(status=review.status(FILM), open=review.list_open(FILM, by, bool(q.get('second'))), check=CHECK, reviewers=REVIEW))
+        if p == '/api/review':                          # 转发 cocheck：每拍颜色、体检/复核员状态
+            return self._json(*cocheck('/status'))
         if p.startswith('/api/job/'):
             j = JOBS.get(p.split('/')[-1]); return self._json(j and dict(running=j['p'].poll() is None, rc=j['p'].poll(), log=open(j['log']).read()[-3000:]) or {'error': 'no job'})
         rel = p.lstrip('/').removeprefix('live/') or 'index.html'
@@ -100,21 +72,15 @@ class H(BaseHTTPRequestHandler):
         p = urlparse(self.path).path; n = int(self.headers.get('Content-Length') or 0)
         try: body = json.loads(self.rfile.read(n) or b'{}')
         except Exception: return self._json({'error': 'bad json'}, 400)
-        if p in ('/live/save', '/api/save'):
-            r = api.save(body)
-            if r[1] == 200 and CHECK['auto']: request_check()      # 改一拍 → 自动重新体检、开新单
-            return self._json(*r)
-        if p == '/api/review/check': request_check(); return self._json({'ok': True, 'check': CHECK})
+        if p in ('/live/save', '/api/save'): return self._json(*api.save(body))     # cocheck 监视 doc.json，自动重新体检
+        if p == '/api/review/check': return self._json(*cocheck('/check', {}))
         if p in ('/live/tts', '/api/tts'):
             try: return self._json(*api.tts(body))
             except Exception as e: return self._json({'error': str(e)}, 500)
         if p == '/api/note': return self._json(*add_note(body))
-        if p == '/api/review/open':                     # {report?}：缺省读 .cocut/reflex.json
-            try: return self._json(review.open_tickets(FILM, body.get('report')))
-            except FileNotFoundError: return self._json({'error': '还没有体检报告：先跑 tools/reflex.py 或 cli review open --run'}, 409)
-        if p == '/api/review/answer':                   # {ticket, by, answers:{"0":"yes"}, note?}
+        if p == '/api/review/answer':                   # {ticket, by, answers:{"0":"yes"}, note?} → cocheck
             if not body.get('ticket') or not body.get('by'): return self._json({'error': 'ticket and by required'}, 400)
-            return self._json(*review.answer(FILM, body['ticket'], body['by'], body.get('answers') or {}, body.get('note')))
+            return self._json(*cocheck('/answer', body))
         if p in ('/live/export', '/api/export'):
             jid = time.strftime('export-%H%M%S'); log = os.path.join(FILM, 'job_%s.log' % jid)
             cmd = [sys.executable, os.path.join(ROOT, 'render', 'concat.py')] + (['--final'] if body.get('final', True) else [body.get('ver', 'review')])
@@ -124,6 +90,6 @@ class H(BaseHTTPRequestHandler):
         self._json({'error': 'unknown endpoint'}, 404)
 
 if __name__ == '__main__':
-    port = PORT
+    port = int(sys.argv[2]) if len(sys.argv) > 2 else 8790
     print('cocut: http://localhost:%d/live/  片子：%s' % (port, FILM), flush=True)
     ThreadingHTTPServer(('127.0.0.1', port), H).serve_forever()
