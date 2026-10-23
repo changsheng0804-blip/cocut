@@ -2,6 +2,7 @@
 # 用法（Gemini 例，需在能读钥匙串的桌面会话里跑）：
 #   python3 tools/reviewer.py --server http://localhost:8790 --by gemini \
 #     --cmd 'agy --model gemini-4-argon-high --dangerously-skip-permissions -p {prompt}'
+# 分级：快模型先答全部，强模型加 --escalate 只看红/黄。
 # 换别的 AI：只换 --cmd（{prompt} 会被替换为已转义的提示词）和 --by。
 import argparse, json, os, shlex, shutil, subprocess, sys, tempfile, time, urllib.request
 
@@ -18,8 +19,13 @@ def call(server, path, body=None):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--server', default='http://localhost:8790'); ap.add_argument('--by', required=True)
     ap.add_argument('--cmd', required=True); ap.add_argument('--second', action='store_true'); ap.add_argument('--keep', action='store_true')
+    ap.add_argument('--escalate', action='store_true', help='只复核当前判红或黄（拿不准）的单，给强模型做第二意见')
     a = ap.parse_args()
-    tickets = call(a.server, '/api/review?by=%s%s' % (a.by, '&second=1' if a.second else ''))['open']
+    r = call(a.server, '/api/review?by=%s%s' % (a.by, '&second=1' if a.second or a.escalate else ''))
+    tickets = r['open']
+    if a.escalate:
+        hot = {v['ticket'] for v in r['status'].values() if v['color'] in ('red', 'yellow')}
+        tickets = [t for t in tickets if t['id'] in hot]
     if not tickets: print('没有待复核的单'); return
     work = tempfile.mkdtemp(prefix='cocut-review-'); slim = []
     for t in tickets:
