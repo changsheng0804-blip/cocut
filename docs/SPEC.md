@@ -50,6 +50,7 @@
 | fix | 建议改法 |
 | status | open / todo / done |
 | reply, by_fix | 谁改了、怎么改的 |
+| layer | 落到哪份素材 `{kind, beat, src}`：kind 为 image（src 是图路径）/ sub（旁白字幕，src=vo.text）/ caption / title / title2。带 x、y 留意见时自动算出（页面按点中的元素，接口按字号估算） |
 
 ## 复核 review（由插件 cocheck 维护）
 AI 智能审核（反射层体检、复核单、复核员链、统一模型接入口）已拆成独立插件 cocheck，数据在 `<片子>/.cocheck/`，规格见 cocheck 仓库 docs/API.md。
