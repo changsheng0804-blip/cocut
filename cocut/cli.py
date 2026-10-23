@@ -86,7 +86,9 @@ elif a.cmd == 'frame':
     ids = [b['id'] for b in d['beats']]
     if w == 'all':
         os.makedirs(a.dir, exist_ok=True)
-        for bid in ids: print(snap.shot(U, os.path.join(a.dir, 'frame_%s.png' % bid), beat=bid, hud=a.hud, width=a.width))
+        from concurrent.futures import ThreadPoolExecutor                     # 每帧一个无头 Chrome，3 个并行
+        with ThreadPoolExecutor(int(os.environ.get('COCUT_SNAP_JOBS', 3))) as ex:
+            for f in ex.map(lambda bid: snap.shot(U, os.path.join(a.dir, 'frame_%s.png' % bid), beat=bid, hud=a.hud, width=a.width), ids): print(f)
     elif w in ids: print(snap.shot(U, a.out or 'frame_%s.png' % w, beat=w, hud=a.hud, width=a.width))
     else: print(snap.shot(U, a.out or 'frame_%s.png' % w, t=float(w), hud=a.hud, width=a.width))
 elif a.cmd == 'review':
