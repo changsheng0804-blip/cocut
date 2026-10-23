@@ -9,7 +9,7 @@
 - [x] 复核员提速：`--jobs N` 并发（代理拆份/接口并发）+ `--api` 直连 generateContent（无代理来回）+ 429 指数退避。12 张单：agy Flash 644→178 秒；Gemini 4 直连 149 秒（逐张）/约 100 秒（并发，受 Vertex 配额限流，额度充足时 31 秒）；答案与原来 17–19/19 一致。
 - [x] AI 智能审核拆成独立插件 cocheck：统一模型接入口（embed/ask 两种能力；local_embed、gemini、openai 兼容、cli 代理、remote）、适配器（cocut/items/folder）、HTTP /v1 + CLI + 可嵌入色带组件；cocut 只做转发和画面。
 - [ ] 云端大模型领单、MCP 工具（在 cocheck 里做）。
-- [~] **局部发音修正**（《懒》N13，已在示例修复）：`vo.say` 记录配音替换文本，`/api/tts` 支持 say、只重配这一拍。待做：全片读音表（多音字词典）自动套用、界面上编辑 say。
+- [x] **读音**（《懒》N13，issue #1）：全片读音表 `doc.lexicon` 自动套用、单拍 `vo.say` 覆盖、`vo.said` 记录实际念的、读法变了配音自动算过期；界面「读音」面板和拍点「读法」框；`cli.py readings / lex / say / voice stale`；拼音要求经 cocheck 交复核员核对。
 - [x] **4a 音频出错排查**（《懒》N14，已修复）：`tools/mixdown.py` 离线混音后定位为 duck=0 造成 55.0–56.6 秒纯数字静音，改 duck 0.12 + 急停音余尾。
 - [ ] **导出端直接用 mixdown 音轨**：render/concat.py 不再自己摆配乐/旁白/音效，改为铺一条 mixdown.py 生成的成品音轨，浏览器与导出声音完全一致，顺带解决导出端 duck。
 - [ ] **静音检查**：对 mixdown 结果扫整片，任何超过 0.5 秒低于 -60 dB 的段落即报警（进页面的问题清单和 CLI）。
