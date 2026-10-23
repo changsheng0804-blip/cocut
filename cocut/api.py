@@ -59,6 +59,33 @@ def tts(body, voice='zh-CN-YunxiNeural'):
     ff = shutil.which('ffprobe') or os.path.expanduser('~/.local/bin/ffprobe')
     dur = float(subprocess.check_output([ff, '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out]))
     return {'file': rel, 'dur': round(dur, 3), 'words': words, 'said': text}, 200
+# ---- 意见落到素材：成品帧上的一个点 (t, x, y) → 它属于哪份素材（图层）----
+# kind：image（这拍的原图）/ sub（旁白字幕，改 vo.text）/ caption（画面小字）/ title、title2（片名、副标题）
+# 几何和 app/live.js overlay() 一致；页面里点击用 DOM 精确命中，这里给 API/命令行用，按字号估算文字框。
+LAYER_SRC = {'sub': 'vo.text', 'caption': 'caption', 'title': 'vo.text', 'title2': 'caption'}
+def _tw(text, size): return sum(size if ord(c) > 0x2e80 else size * 0.55 for c in text)
+def layer_at(doc, t, x, y):
+    st = doc.get('style') or {}; s = 0; bs = doc['beats']
+    for i, b in enumerate(bs):
+        if s <= t < s + b['dur'] or i == len(bs) - 1: break
+        s += b['dur']
+    e = s + b['dur']; vo = b.get('vo') or {}; X, Y = x * 1920, y * 1080; boxes = []
+    def box(kind, text, cy, size, padx, pady):
+        w = _tw(text, size) + 2 * padx * size; h = size * (1.25 + 2 * pady)
+        boxes.append((kind, abs(X - 960) <= w / 2 + 20 and abs(Y - cy) <= h / 2 + 15))
+    if vo and not b.get('title'):
+        a = s + vo.get('lead', 0)
+        if a <= t <= a + vo.get('dur', 0): box('sub', vo['text'].rstrip('。'), 1000, st.get('sub_size', 40), .55, .12)
+    if b.get('caption') and not b.get('title') and s + 0.5 <= t <= e - 0.2: box('caption', b['caption'], 110, st.get('note_size', 30), .6, .18)
+    if b.get('title') and vo:
+        a = s + vo.get('lead', 0); ty = st.get('title_y', 520)
+        if t >= a: box('title', vo['text'].split('。')[0], ty, st.get('title_size', 96), .1, 0)
+        if b.get('caption') and t >= a + 0.6: box('title2', b['caption'], ty + 105, st.get('sub_size', 40), .1, 0)
+    for kind, hit in boxes:
+        if hit: return dict(kind=kind, beat=b['id'], src=LAYER_SRC[kind])
+    nx = bs[i + 1] if i + 1 < len(bs) else None
+    if nx and e - t < 0.25 and 1 - (e - t) / 0.25 > 0.5: b = nx          # 交叉淡化后半段，看到的主要是下一拍的图
+    return dict(kind='image', beat=b['id'], src=b.get('image') or '')
 def to_plan(doc):
     t = 0; plan = {'title': doc['title'], 'fps': doc['fps'], 'width': doc['width'], 'height': doc['height'], 'one_thing': doc.get('one_thing', ''),
                    'beats': [], 'vo': [], 'sfx': [], 'subs': [], 'notes': [], 'music': dict(file=doc['music']['file'], start=0, gain=doc['music']['gain'], fade_out=doc['music']['fade_out']),
