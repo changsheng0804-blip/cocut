@@ -1,4 +1,5 @@
 # 给任何 AI（或人）在终端里用的最小命令行：读片子、留意见、改拍点字段。
+#   python3 cocut/cli.py new script.md 片子目录     从文字脚本出可播的预览草稿（配音+文字卡，不出图不渲染），见 cocut/draft.py
 #   python3 cocut/cli.py show [片子目录]
 #   python3 cocut/cli.py note --beat 2c --by claude --dim 画面 --sev 2 "指针穿出表壳" --fix "指针收回表盘内"
 #   python3 cocut/cli.py note --t 24.5 --x 0.5 --y 0.93 --by gemini "字幕压住了表盘"   （看着 frame 快照点位置：自动落到那份素材，图/字幕/小字）
@@ -16,6 +17,8 @@
 #   更多（换模型、并发、远端模型）直接用 cocheck 命令行，见 cocheck 仓库 README。
 import argparse, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+if sys.argv[1:2] == ['new']:                     # 从文字脚本出预览草稿：cli.py new script.md 片子目录 [--voice ...] [--no-voice]
+    sys.argv = [sys.argv[0]] + sys.argv[2:]; import runpy; runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'draft.py'), run_name='__main__'); sys.exit()
 ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('args', nargs='*')
 ap.add_argument('--film', default=os.environ.get('COCUT_FILM', '.')); ap.add_argument('--beat'); ap.add_argument('--t', type=float); ap.add_argument('--x', type=float); ap.add_argument('--y', type=float)
 ap.add_argument('--by', default='user'); ap.add_argument('--dim'); ap.add_argument('--sev', type=int); ap.add_argument('--fix')
