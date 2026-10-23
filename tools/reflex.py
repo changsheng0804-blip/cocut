@@ -146,9 +146,10 @@ class Reflex:
         return dict(good=round(float(g[j]), 4), bad=round(float(b[j]), 4), at=round(starts[j] / 16000, 2), flag=bool(b[j] > g[j]))
 
 
-def check_film(film, out=None):
+def check_film(film, out=None, rx=None):
+    """rx：可传入已加载的 Reflex（服务端常驻，免每次加载模型）。"""
     d = json.load(open(f'{film}/doc.json', encoding='utf-8')); B = [b for b in d['beats'] if b.get('image')]
-    rx = Reflex(cache=f'{film}/.reflex_cache'); t0 = time.time()
+    rx = rx or Reflex(cache=f'{film}/.reflex_cache'); rx._refs = None; t0 = time.time()
     imgs = [f'{film}/{b["image"]}' for b in B]
     refs = rx.text_refs(imgs[:4]); res = {b['id']: {} for b in B}
     for b, p in zip(B, imgs): res[b['id']]['text_in_image'] = rx.text_in_image(p, refs)
