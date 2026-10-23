@@ -57,7 +57,8 @@ def tts(body, voice='zh-CN-YunxiNeural'):
                 elif ch['type'] == 'WordBoundary': words.append({'t': ch['offset'] / 1e7, 'd': ch['duration'] / 1e7, 'w': ch['text']})
     asyncio.run(go())
     ff = shutil.which('ffprobe') or os.path.expanduser('~/.local/bin/ffprobe')
-    dur = float(subprocess.check_output([ff, '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out]))
+    if os.path.exists(ff): dur = float(subprocess.check_output([ff, '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out]))
+    else: dur = (words[-1]['t'] + words[-1]['d'] + 0.15) if words else os.path.getsize(out) / 6000   # 没装 ffmpeg：按字级时间估（edge-tts 48kbps）
     return {'file': rel, 'dur': round(dur, 3), 'words': words, 'said': text}, 200
 # ---- 意见落到素材：成品帧上的一个点 (t, x, y) → 它属于哪份素材（图层）----
 # kind：image（这拍的原图）/ sub（旁白字幕，改 vo.text）/ caption（画面小字）/ title、title2（片名、副标题）
@@ -88,7 +89,7 @@ def layer_at(doc, t, x, y):
     return dict(kind='image', beat=b['id'], src=b.get('image') or '')
 def to_plan(doc):
     t = 0; plan = {'title': doc['title'], 'fps': doc['fps'], 'width': doc['width'], 'height': doc['height'], 'one_thing': doc.get('one_thing', ''),
-                   'beats': [], 'vo': [], 'sfx': [], 'subs': [], 'notes': [], 'music': dict(file=doc['music']['file'], start=0, gain=doc['music']['gain'], fade_out=doc['music']['fade_out']),
+                   'beats': [], 'vo': [], 'sfx': [], 'subs': [], 'notes': [], 'music': dict(file=(doc.get('music') or {}).get('file'), start=0, gain=(doc.get('music') or {}).get('gain', 0), fade_out=(doc.get('music') or {}).get('fade_out', 0)),
                    'vo_gain': doc.get('vo_gain', 1), 'style': doc.get('style', {})}
     for b in doc['beats']:
         s, e = t, t + b['dur']; t = e
