@@ -18,6 +18,22 @@ function layout() {
 const beatAt = (t) => S.doc.beats.find((b) => t >= b._s && t < b._e) || S.doc.beats[S.doc.beats.length - 1];
 const selBeat = () => S.doc.beats.find((b) => b.id === S.sel);
 
+// ---------- 读音（和 cocut/api.py 同一套规则）----------
+// 全片读音表 doc.lexicon = [{w 原文片段, say 读成, py? {字: 拼音}, note?}]；拍点 vo.say 是单拍手动覆盖。
+// vo.said = 上次配音实际念的；和现在该念的不一样 → 配音过期。
+const reEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function lexApply(text, lex) {
+  const es = (lex || []).filter((e) => e.w && e.say != null).sort((a, b) => b.w.length - a.w.length);
+  if (!es.length || !text) return text || '';
+  const m = Object.fromEntries(es.map((e) => [e.w, e.say]));
+  return text.replace(new RegExp(es.map((e) => reEsc(e.w)).join('|'), 'g'), (x) => m[x]);
+}
+const spoken = (b) => (b.vo && b.vo.say) ? b.vo.say : lexApply(b.vo ? b.vo.text : '', S.doc.lexicon);
+const said = (b) => ('said' in b.vo) ? b.vo.said : (b.vo.say || b.vo.text);
+const readingStale = (b) => !!(b.vo && b.vo.file && said(b) !== spoken(b));
+function pinSaid(d) { for (const b of d.beats || []) if (b.vo && b.vo.file && !('said' in b.vo)) b.vo.said = b.vo.say || b.vo.text; return d; }   // 老数据先钉住当时念的
+const voStale = (b) => !!(b.vo && (b.vo.stale || readingStale(b)));
+
 // ---------- 检查（和 compile.py 同一套规则，实时跑） ----------
 function lint() {
   const out = [], bs = S.doc.beats;
@@ -26,6 +42,7 @@ function lint() {
       const room = b.dur - b.vo.lead - 0.15;
       if (b.vo.dur > room) out.push({ lvl: 'red', beat: b.id, msg: `旁白 ${b.vo.dur.toFixed(1)}s 塞不进（拍点只剩 ${room.toFixed(1)}s）`, fix: ['按旁白延长', () => { b.dur = +(b.vo.lead + b.vo.dur + 0.6).toFixed(2); }] });
       if (b.vo.stale) out.push({ lvl: 'yellow', beat: b.id, msg: '旁白文字改了，配音还是旧的', fix: ['重新配音', () => tts(b)] });
+      else if (readingStale(b)) out.push({ lvl: 'yellow', beat: b.id, msg: `读法改了，配音还念「${said(b)}」`, fix: ['重新配音', () => tts(b)] });
     }
     if (b.dur < 1.8) out.push({ lvl: 'yellow', beat: b.id, msg: `只有 ${b.dur.toFixed(1)}s，画面可能看不清` });
     if (!b.image) out.push({ lvl: 'yellow', beat: b.id, msg: '还没有示意图，现在显示文字卡' });
@@ -199,7 +216,7 @@ function renderTL() {
   });
   const rv = $('#rowVo'); rv.querySelectorAll('.vo').forEach((x) => x.remove());
   for (const b of S.doc.beats) if (b.vo) {
-    const v = el('div', 'vo' + (b.vo.stale ? ' stale' : ''), b.vo.text); const a = b._s + b.vo.lead;
+    const v = el('div', 'vo' + (voStale(b) ? ' stale' : ''), b.vo.text); const a = b._s + b.vo.lead;
     v.style.left = X(a) + 'px'; v.style.width = X(b.vo.dur) + 'px'; v.title = b.vo.text;
     for (const w of b.vo.words || []) { const i = el('i'); i.style.left = X(w.t) + 'px'; v.appendChild(i); }
     v.onmousedown = (e) => { e.stopPropagation(); S.sel = b.id; leadDrag(e, b); }; rv.appendChild(v);
@@ -246,10 +263,10 @@ function reorderDrag(e, b) {            // 点一下 = 选中并跳到这拍；�
 function renderSide() {
   const tabs = $('#tabs'); tabs.innerHTML = ''; const L = lint();
   const nR = Object.values(S.rv.status).filter((x) => x.color === 'red').length;
-  for (const [k, n] of [['beat', '拍点'], ['review', `复核${nR ? ' ' + nR : ''}`], ['lint', `检查 ${L.length}`], ['notes', `意见 ${S.doc.notes.filter((x) => x.status !== 'done').length}`], ['film', '整片']])
+  for (const [k, n] of [['beat', '拍点'], ['review', `复核${nR ? ' ' + nR : ''}`], ['lint', `检查 ${L.length}`], ['notes', `意见 ${S.doc.notes.filter((x) => x.status !== 'done').length}`], ['say', '读音'], ['film', '整片']])
     tabs.appendChild(btn(n, S.tab === k ? 'cur' : '', () => { S.tab = k; renderSide(); }));
   const p = $('#panel'); p.innerHTML = '';
-  ({ beat: beatPanel, review: reviewPanel, lint: lintPanel, notes: notesPanel, film: filmPanel })[S.tab](p, L);
+  ({ beat: beatPanel, review: reviewPanel, lint: lintPanel, notes: notesPanel, say: sayPanel, film: filmPanel })[S.tab](p, L);
 }
 function field(p, label, node) { const s = el('div', 'sec'); s.appendChild(el('h3', '', label)); s.appendChild(node); p.appendChild(s); return node; }
 function beatPanel(p) {
@@ -271,7 +288,14 @@ function beatPanel(p) {
     if (!b.vo) b.vo = { file: '', dur: v.length * 0.24, text: v, words: [], lead: 0.25, stale: true };
     else if (v !== b.vo.text) { b.vo.text = v; b.vo.stale = true; b.vo.dur = Math.max(b.vo.dur, v.length * 0.24); }
   }));
-  if (b.vo) { const rr = el('div', 'row2'); rr.append(el('span', 'muted', `${b.vo.dur.toFixed(2)}s · 拍点内起点 ${b.vo.lead}s`), btn(b.vo.stale ? '重新配音' : '重配', 'small', () => tts(b))); vo.after(rr); }
+  if (b.vo) {
+    const rr = el('div', 'row2'); rr.append(el('span', 'muted', `${b.vo.dur.toFixed(2)}s · 拍点内起点 ${b.vo.lead}s`), btn(voStale(b) ? '重新配音' : '重配', 'small', () => tts(b))); vo.after(rr);
+    const sy = el('input'); sy.value = b.vo.say || ''; sy.placeholder = lexApply(b.vo.text, S.doc.lexicon); sy.style.width = '100%';
+    sy.onchange = () => { push(); const v = sy.value.trim(); if (v && v !== lexApply(b.vo.text, S.doc.lexicon)) b.vo.say = v; else delete b.vo.say; changed(); };
+    const sec = el('div', 'sec'); sec.append(el('h3', '', '读法（配音实际念的；空着就按读音表）'), sy);
+    if (readingStale(b)) sec.appendChild(el('div', 'muted', `配音还念「${said(b)}」，要重新配音`));
+    rr.after(sec);
+  }
   field(p, '画面小字', ta(b.caption, 40, (v) => { if (v) b.caption = v; else delete b.caption; }));
   const r3 = el('div', 'row2'); const rl = el('input'); rl.value = b.role || ''; rl.style.width = '90px'; rl.onchange = () => { push(); b.role = rl.value; changed(); };
   const vb = el('input'); vb.value = b.verb || ''; vb.style.width = '90px'; vb.onchange = () => { push(); b.verb = vb.value; changed(); };
@@ -305,6 +329,35 @@ function notesPanel(p) {
     c.appendChild(a); p.appendChild(c);
   }
 }
+function sayPanel(p) {
+  const d = S.doc; d.lexicon = d.lexicon || [];
+  p.appendChild(el('div', 'muted', '全片读音表：旁白里出现左边的字词，配音就念右边的；字幕不变。写带上下文的词（「六百万行」），别只写单字。拼音要求会交给复核员核对。'));
+  for (const e of d.lexicon) {
+    const r = el('div', 'lex'); const n = d.beats.filter((b) => b.vo && b.vo.text.includes(e.w)).length;
+    const i = (v, w, on) => { const x = el('input'); x.value = v || ''; x.onchange = () => { push(); on(x.value.trim()); changed(); }; return x; };
+    r.append(i(e.w, '30%', (v) => { e.w = v; }), '→', i(e.say, '30%', (v) => { e.say = v; }),
+      i(e.py ? Object.entries(e.py).map(([k, v]) => k + '=' + v).join(' ') : '', '22%', (v) => { const o = Object.fromEntries(v.split(/\s+/).filter((x) => x.includes('=')).map((x) => x.split('='))); if (Object.keys(o).length) e.py = o; else delete e.py; }),
+      el('span', 'muted', `${n} 拍`), btn('删', 'small', () => { push(); d.lexicon = d.lexicon.filter((x) => x !== e); changed(); }));
+    p.appendChild(r);
+  }
+  const add = el('div', 'lex'); const aw = el('input'); aw.placeholder = '原文'; const as = el('input'); as.placeholder = '念成';
+  const ap = el('input'); ap.placeholder = '字=拼音'; ap.title = '拼音要求，如 行=háng；交给复核员核对';
+  add.append(aw, '→', as, ap, btn('加', 'small', () => { const w = aw.value.trim(), sy = as.value.trim(); if (!w || !sy) return; push();
+    const e = { w, say: sy }; const o = Object.fromEntries(ap.value.trim().split(/\s+/).filter((x) => x.includes('=')).map((x) => x.split('='))); if (Object.keys(o).length) e.py = o;
+    d.lexicon = d.lexicon.filter((x) => x.w !== w).concat([e]); changed(); }), el('span', ''));
+  p.appendChild(add);
+  const vb = d.beats.filter((b) => b.vo); const st = vb.filter(voStale);
+  const h = el('div', 'row2'); h.style.marginTop = '14px'; h.append(el('b', '', '每拍实际念的'), el('span', 'muted', st.length ? `${st.length} 拍配音过期` : '配音都是最新的'));
+  if (st.length) h.appendChild(btn('重配过期的', 'small', async () => { for (const b of st) await tts(b); }));
+  p.appendChild(h);
+  for (const b of vb) {
+    const sp = spoken(b); const c = el('div', 'lint ' + (voStale(b) ? 'yellow' : 'ok'));
+    c.appendChild(el('div', '', `${b.id}  ${sp}${b.vo.say ? '（单拍覆盖）' : ''}`));
+    if (sp !== b.vo.text) c.appendChild(el('div', 'muted', '字幕：' + b.vo.text));
+    if (readingStale(b)) c.appendChild(el('div', 'muted', '配音还念：' + said(b)));
+    c.onclick = () => { S.sel = b.id; seek(b._s + 0.01); }; c.style.cursor = 'pointer'; p.appendChild(c);
+  }
+}
 function filmPanel(p) {
   const d = S.doc; const r = el('div', 'row2');
   const tg = el('input'); tg.type = 'number'; tg.value = d.target; tg.onchange = () => { push(); d.target = +tg.value; changed(); };
@@ -331,9 +384,9 @@ function addNote(o) { push(); const n = Math.max(0, ...S.doc.notes.map((x) => +x
 async function tts(b) {
   toast('配音中…');
   try {
-    const r = await fetch('/live/tts', { method: 'POST', body: JSON.stringify({ id: b.id, text: b.vo.text, say: b.vo.say }) }); const j = await r.json();
+    const r = await fetch('/live/tts', { method: 'POST', body: JSON.stringify({ id: b.id, text: b.vo.text, say: spoken(b) }) }); const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || r.status);
-    push(); Object.assign(b.vo, { file: j.file, dur: j.dur, words: j.words, stale: false }); delete S.audio.bufs[j.file];
+    push(); Object.assign(b.vo, { file: j.file, dur: j.dur, words: j.words, stale: false, said: j.said || spoken(b) }); delete S.audio.bufs[j.file];
     if (S.audio.ctx) await loadBuf(j.file); changed(); toast('已重新配音');
   } catch (e) { toast('配音接口没连上（审片室服务需要更新后重启）：' + e.message); }
 }
@@ -369,7 +422,7 @@ let lastDisk = '';
 async function poll() {                   // Hark 在外面改了 doc.json，页面自动接上
   try {
     const r = await fetch('doc.json?ts=' + Date.now()); const txt = await r.text(); if (txt === lastDisk) return; const disk = JSON.parse(txt);
-    if (lastDisk && disk.saved !== S.doc.saved) { push(); S.doc = disk; S.imgs = {}; S.audio.bufs = {}; if (S.audio.ctx) await ensureAudioFiles(); changed(true); renderSide(); toast('Hark 更新了片子'); }
+    if (lastDisk && disk.saved !== S.doc.saved) { push(); S.doc = pinSaid(disk); S.imgs = {}; S.audio.bufs = {}; if (S.audio.ctx) await ensureAudioFiles(); changed(true); renderSide(); toast('Hark 更新了片子'); }
     lastDisk = txt;
   } catch (e) {}
 }
@@ -447,11 +500,12 @@ async function exportFilm() {
   catch (e) { toast('导出接口没连上（审片室服务需要更新后重启）'); }
 }
 async function main() {
-  const txt = await (await fetch('doc.json?ts=' + Date.now())).text(); lastDisk = txt; S.doc = JSON.parse(txt);
+  const txt = await (await fetch('doc.json?ts=' + Date.now())).text(); lastDisk = txt; S.doc = pinSaid(JSON.parse(txt));
   const ls = localStorage.getItem('lan_live_doc');
-  if (ls) { const l = JSON.parse(ls); if (l.saved && (!S.doc.saved || l.saved > S.doc.saved)) { S.doc = l; toast('接上你上次在浏览器里的改动'); } }
+  if (ls) { const l = JSON.parse(ls); if (l.saved && (!S.doc.saved || l.saved > S.doc.saved)) { S.doc = pinSaid(l); toast('接上你上次在浏览器里的改动'); } }
   layout(); S.sel = S.doc.beats[0].id;
   const hm = location.hash.match(/t=([\d.]+)/); if (hm) { S.t = clamp(+hm[1], 0, S.len - 0.01); S.sel = beatAt(S.t).id; }
+  const ht = location.hash.match(/tab=(\w+)/); if (ht) S.tab = ht[1];          // 直达某个面板：#tab=say&t=12
   $('#stage').onclick = stageClick; $('#bPlay').onclick = togglePlay; $('#bUndo').onclick = undo; $('#bExport').onclick = exportFilm;
   const tog = (id, k) => { $(id).onclick = () => { S[k] = !S[k]; $(id).classList.toggle('on', S[k]); frame(); }; };
   tog('#bHud', 'hud'); tog('#bXf', 'xf'); tog('#bSafe', 'safe');
