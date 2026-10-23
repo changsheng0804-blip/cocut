@@ -1,4 +1,4 @@
-// 《懒》动态预览：doc.json（拍点 + 挂在拍点上的旁白/小字）在浏览器里实时合成。时间全部由拍点时长推出，改一处后面自动顺延。
+// cocut 审片页：doc.json（拍点 + 挂在拍点上的旁白/小字）在浏览器里实时合成。时间全部由拍点时长推出，改一处后面自动顺延。
 'use strict';
 const $ = (s) => document.querySelector(s);
 const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
@@ -51,7 +51,7 @@ function quietGaps() {
     if (b.vo) { const w = (b.vo.words || []).slice(-1)[0]; on.push([b._s + b.vo.lead, b._s + b.vo.lead + (w ? w.t + w.d : b.vo.dur)]); }
     for (const x of b.sfx || []) { const bf = S.audio.bufs[x.file]; on.push([b._s + (x.at || 0), b._s + (x.at || 0) + (bf ? Math.min(bf.duration, 1.2) : 0.6)]); }
   }
-  const out = []; let st = null; const m = S.doc.music;
+  const out = []; let st = null; const m = S.doc.music || {};
   for (let t = 1; t < S.len - (m.fade_out || 0); t += 0.05) {
     const q = duckK(t) < 0.3 && !on.some(([a, z]) => t >= a && t < z);
     if (q && st == null) st = t; if (!q && st != null) { if (t - st > 0.6) out.push([st, t]); st = null; }
@@ -70,8 +70,9 @@ function lint() {
       else if (readingStale(b)) out.push({ lvl: 'yellow', beat: b.id, msg: `读法改了，配音还念「${said(b)}」`, fix: ['重新配音', () => tts(b)] });
     }
     if (b.dur < 1.8) out.push({ lvl: 'yellow', beat: b.id, msg: `只有 ${b.dur.toFixed(1)}s，画面可能看不清` });
-    if (!b.image) out.push({ lvl: 'yellow', beat: b.id, msg: '还没有示意图，现在显示文字卡' });
   });
+  const noImg = bs.filter((b) => !b.image && !b.title);                    // 草稿阶段文字卡是正常的：只报一条
+  if (noImg.length) out.push({ lvl: 'info', beat: noImg[0].id, msg: `${noImg.length} 拍还是文字卡（${noImg.map((b) => b.id).join(' ')}），主线定了再逐拍换图` });
   for (const [a, z] of quietGaps()) { const b = beatAt(a);
     out.push({ lvl: 'red', beat: b.id, msg: `${fmt(a)}–${fmt(z)} 有 ${(z - a).toFixed(1)}s 几乎没声音（配乐压到 ${Math.round((b.duck ?? 1) * 100)}%，没旁白没音效），听起来像断了`,
       fix: b.duck != null ? ['配乐只压到 45%、缓一点', () => { b.duck = 0.45; b.duck_attack = 0.25; b.duck_release = 0.5; }] : null }); }
@@ -113,10 +114,10 @@ function drawBeat(g, b, t, alpha) {
     g.drawImage(im, (1920 - w) / 2 + ox, (1080 - h) / 2, w, h);
   } else {                                   // 没图：文字卡，照样能看节奏
     g.fillStyle = '#23232c'; g.fillRect(0, 0, 1920, 1080);
-    g.fillStyle = '#8f8fa3'; g.font = '40px PFM, sans-serif'; g.textAlign = 'center';
-    g.fillText(`${b.id} · ${b.role || ''}·${b.verb || ''}`, 960, 420);
-    g.fillStyle = '#d8d8e6'; g.font = '52px PFR, sans-serif';
-    wrap(g, b.what || '（空拍点）', 960, 520, 1500, 72);
+    g.fillStyle = '#8f8fa3'; g.font = "40px PFM, 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif"; g.textAlign = 'center';
+    if (!b.title) g.fillText(`${b.id} · ${[b.role, b.verb].filter(Boolean).join('·')}`, 960, 420);
+    g.fillStyle = '#d8d8e6'; g.font = "52px PFR, 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif";
+    if (!b.title) wrap(g, b.what || '（空拍点）', 960, 520, 1500, 72);      // 片名拍只留片名
   }
   if (b.dim) { g.fillStyle = `rgba(0,0,0,${b.dim * clamp(p * 3, 0, 1)})`; g.fillRect(0, 0, 1920, 1080); }
   g.restore();
@@ -150,7 +151,7 @@ function overlay(b, t) {
     const a = b._s + b.vo.lead; if (t >= a) put('ttl', b.vo.text.split('。')[0], st.title_y || 520, st.title_size, { opacity: clamp((t - a) / 0.4, 0, 1) });
     if (b.caption && t >= a + 0.6) put('ttl2', b.caption, (st.title_y || 520) + 105, st.sub_size, { opacity: clamp((t - a - 0.6) / 0.5, 0, 1) });
   }
-  if (S.snap && !S.marks) { $('#hud').style.display = S.hud ? '' : 'none'; $('#hud').textContent = `${b.id}  ${b.role || ''}·${b.verb || ''}  ${fmt(t)}`; return; }
+  if (S.snap && !S.marks) { $('#hud').style.display = S.hud ? '' : 'none'; $('#hud').textContent = `${b.id}  ${[b.role, b.verb].filter(Boolean).join('·')}  ${fmt(t)}`; return; }
   for (const n of S.doc.notes) {
     if (n.status === 'done' || Math.abs(n.t - t) > 1.2) continue;
     const p = el('div', 'pin', n.id.replace('N', '')); p.style.left = n.x * 100 + '%'; p.style.top = n.y * 100 + '%';
@@ -169,14 +170,14 @@ function overlay(b, t) {
     else if (rs.color === 'yellow' && tile == null) ov.appendChild(el('div', 'rvtag yellow', `待 AI 复核 ${rs.asks.length} 题`));
   }
   $('#hud').style.display = S.hud ? '' : 'none';
-  $('#hud').textContent = `${b.id}  ${b.role || ''}·${b.verb || ''}  ${fmt(t)}`;
+  $('#hud').textContent = `${b.id}  ${[b.role, b.verb].filter(Boolean).join('·')}  ${fmt(t)}`;
 }
 
 // ---------- 声音 ----------
 async function ensureAudio() {
   const A = S.audio; if (A.ctx) return;
   A.ctx = new AudioContext(); A.master = A.ctx.createGain(); A.master.connect(A.ctx.destination);
-  const files = [S.doc.music.file, ...S.doc.beats.filter((b) => b.vo && b.vo.file).map((b) => b.vo.file), ...S.doc.beats.flatMap((b) => (b.sfx || []).map((x) => x.file))];
+  const files = [(S.doc.music || {}).file, ...S.doc.beats.filter((b) => b.vo && b.vo.file).map((b) => b.vo.file), ...S.doc.beats.flatMap((b) => (b.sfx || []).map((x) => x.file))].filter(Boolean);   // 配乐可以没有
   await Promise.all(files.map(loadBuf));
 }
 async function loadBuf(f) {
@@ -186,7 +187,7 @@ async function loadBuf(f) {
 }
 function startAudio() {
   const A = S.audio, now = A.ctx.currentTime + 0.05, from = S.t; stopAudio();
-  const m = S.doc.music, mb = A.bufs[m.file];
+  const m = S.doc.music || {}, mb = m.file && A.bufs[m.file];
   if (mb && from < S.len) {
     const s = A.ctx.createBufferSource(), g = A.ctx.createGain(); s.buffer = mb; s.connect(g); g.connect(A.master);
     const v = (t) => m.gain * clamp(Math.min(t / m.fade_in, (S.len - t) / m.fade_out), 0, 1) * duckK(t);
@@ -328,9 +329,9 @@ function beatPanel(p) {
   r3.append('讯息角色', rl, '动词', vb); p.appendChild(r3);
   const r4 = el('div', 'row2');
   r4.append(btn('后面插一拍', 'small', () => insertAfter(b)), btn('复制', 'small', () => insertAfter(b, true)), btn('删除这拍', 'small', () => delBeat(b)),
-    btn('换图（交给 Hark）', 'small', () => addNote({ t: b._s + b.dur / 2, x: 0.5, y: 0.5, beat: b.id, text: `重出示意图：${b.what}`, kind: 'image' })));
+    btn('换图（留给出图的 AI）', 'small', () => addNote({ t: b._s + b.dur / 2, x: 0.5, y: 0.5, beat: b.id, text: `重出示意图：${b.what}`, kind: 'image' })));
   p.appendChild(r4);
-  if (b.image_stale) p.appendChild(el('div', 'muted', '画面说明改过了，示意图还是旧的：可以点“换图”交给 Hark。'));
+  if (b.image_stale) p.appendChild(el('div', 'muted', '画面说明改过了，图还是旧的：可以点“换图”留一条出图意见。'));
 }
 function lintPanel(p, L) {
   if (!L.length) p.appendChild(el('div', 'muted', '没有问题。'));
@@ -343,13 +344,13 @@ function lintPanel(p, L) {
   }
 }
 function notesPanel(p) {
-  p.appendChild(el('div', 'muted', '点画面留意见。Hark 读的就是这里：每条带时间、位置和拍点号。'));
+  p.appendChild(el('div', 'muted', '点画面留意见。AI 读的也是这里：每条带时间、位置，并落到点中的素材。'));
   for (const n of [...S.doc.notes].reverse()) {
     const c = el('div', 'ncard' + (n.status === 'done' ? ' done' : '')); const m = el('div', 'm');
     const w = el('b', '', `#${n.id.replace('N', '')} ${fmt(n.t)}`); w.onclick = () => seek(n.t); m.append(w, ` · ${n.beat} · ${n.by === 'user' ? '你' : n.by === 'hark' ? 'Hark' : n.by}${n.status === 'done' ? ' · 已处理' : ''}`);
     c.append(m, el('div', '', n.text));
     if (n.layer) { const lk = el('div', 'muted', `→ ${layerName(n.layer)}${n.layer.kind === 'image' ? '：' + n.layer.src : ''}（点这里去改）`); lk.style.cursor = 'pointer'; lk.onclick = () => goLayer(n.layer); c.appendChild(lk); }
-    if (n.reply) c.appendChild(el('div', 'muted', 'Hark：' + n.reply));
+    if (n.reply) c.appendChild(el('div', 'muted', (n.by_fix || '回复') + '：' + n.reply));
     const a = el('div', 'row2'); a.style.marginTop = '6px';
     a.append(btn(n.status === 'done' ? '重开' : '标记处理', 'small', () => { push(); n.status = n.status === 'done' ? 'todo' : 'done'; changed(); }),
              btn('删除', 'small', () => { push(); S.doc.notes = S.doc.notes.filter((x) => x !== n); changed(); }));
@@ -392,7 +393,7 @@ function filmPanel(p) {
   const g = (lbl, obj, key, min, max, step) => { const rr = el('div', 'row2'); const i = el('input'); i.type = 'range'; i.min = min; i.max = max; i.step = step; i.value = obj[key];
     const v = el('span', 'muted', String(obj[key])); i.oninput = () => { obj[key] = +i.value; v.textContent = i.value; changed(true); }; i.onchange = () => changed();
     rr.append(lbl, i, v); p.appendChild(rr); };
-  g('配乐音量', d.music, 'gain', 0, 1, 0.05); g('旁白增益', d, 'vo_gain', 0.5, 3, 0.1);
+  if (d.music && d.music.file) g('配乐音量', d.music, 'gain', 0, 1, 0.05); g('旁白增益', d, 'vo_gain', 0.5, 3, 0.1);
   g('字幕字号', d.style, 'sub_size', 24, 56, 1); g('片名字号', d.style, 'title_size', 48, 140, 2);
   p.appendChild(el('div', 'muted', `一句话：${d.one_thing}`));
   p.appendChild(el('div', 'muted', '这一页不烧录任何视频。只有点右上角“导出成片”才用 Concat 出一次 MP4。'));
@@ -450,7 +451,7 @@ let saveT = null;
 function changed(light) { layout(); frame(); renderTL(); if (light) return; renderSide(); clearTimeout(saveT); setSave('有改动…'); saveT = setTimeout(save, 700); }
 async function save() {
   S.doc.rev = (S.doc.rev || 1); S.doc.saved = new Date().toISOString();
-  localStorage.setItem('lan_live_doc', JSON.stringify(S.doc));
+  localStorage.setItem(lsKey(), JSON.stringify(S.doc));
   try {
     const r = await fetch('/live/save', { method: 'POST', body: JSON.stringify(S.doc) }); if (!r.ok) throw new Error(r.status);
     const j = await r.json(); setSave('已保存 ' + (j.saved || '')); setTimeout(() => pollReview(true), 300);
@@ -461,11 +462,11 @@ let lastDisk = '';
 async function poll() {                   // Hark 在外面改了 doc.json，页面自动接上
   try {
     const r = await fetch('doc.json?ts=' + Date.now()); const txt = await r.text(); if (txt === lastDisk) return; const disk = JSON.parse(txt);
-    if (lastDisk && disk.saved !== S.doc.saved) { push(); S.doc = pinSaid(disk); S.imgs = {}; S.audio.bufs = {}; if (S.audio.ctx) await ensureAudioFiles(); changed(true); renderSide(); toast('Hark 更新了片子'); }
+    if (lastDisk && disk.saved !== S.doc.saved) { push(); S.doc = pinSaid(disk); S.imgs = {}; S.audio.bufs = {}; if (S.audio.ctx) await ensureAudioFiles(); changed(true); renderSide(); setBrand(); toast('片子在外面被改过，已接上'); }
     lastDisk = txt;
   } catch (e) {}
 }
-async function ensureAudioFiles() { S.audio.bufs = {}; const A = S.audio; A.ctx && await Promise.all([S.doc.music.file, ...S.doc.beats.filter((b) => b.vo && b.vo.file).map((b) => b.vo.file), ...S.doc.beats.flatMap((b) => (b.sfx || []).map((x) => x.file))].map(loadBuf)); }
+async function ensureAudioFiles() { S.audio.bufs = {}; const A = S.audio; A.ctx && await Promise.all([(S.doc.music || {}).file, ...S.doc.beats.filter((b) => b.vo && b.vo.file).map((b) => b.vo.file), ...S.doc.beats.flatMap((b) => (b.sfx || []).map((x) => x.file))].filter(Boolean).map(loadBuf)); }
 
 
 // ---------- 复核（反射层开单 → AI 答是非题 → 按拍红绿） ----------
@@ -550,12 +551,14 @@ async function snapMain() {
   await Promise.all([b, nx].filter((x) => x && x.image).map((x) => new Promise((ok) => { img(x.image); const i = S.imgs[x.image]; if (i.complete) ok(); else { i.addEventListener('load', ok); i.addEventListener('error', ok); } })));
   await document.fonts.ready; draw(); document.title = 'READY';
 }
+const lsKey = () => 'cocut_doc:' + location.pathname + ':' + (S.doc.title || '');   // 每部片子各存各的，不串
+function setBrand() { const t = S.doc.title || '未命名'; document.title = t + ' · 审片室'; const b = $('.brand'); if (b && b.firstChild) b.firstChild.textContent = t + ' '; }
 async function main() {
   if (/[#&]snap\b/.test(location.hash)) return snapMain();
   const txt = await (await fetch('doc.json?ts=' + Date.now())).text(); lastDisk = txt; S.doc = pinSaid(JSON.parse(txt));
-  const ls = localStorage.getItem('lan_live_doc');
+  const ls = localStorage.getItem(lsKey());
   if (ls) { const l = JSON.parse(ls); if (l.saved && (!S.doc.saved || l.saved > S.doc.saved)) { S.doc = pinSaid(l); toast('接上你上次在浏览器里的改动'); } }
-  layout(); S.sel = S.doc.beats[0].id;
+  setBrand(); layout(); S.sel = S.doc.beats[0].id;
   const hm = location.hash.match(/t=([\d.]+)/); if (hm) { S.t = clamp(+hm[1], 0, S.len - 0.01); S.sel = beatAt(S.t).id; }
   const ht = location.hash.match(/tab=(\w+)/); if (ht) S.tab = ht[1];          // 直达某个面板：#tab=say&t=12
   $('#stage').onclick = stageClick; $('#bPlay').onclick = togglePlay; $('#bUndo').onclick = undo; $('#bExport').onclick = exportFilm;
