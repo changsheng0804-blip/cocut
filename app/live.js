@@ -346,8 +346,9 @@ function notesPanel(p) {
   p.appendChild(el('div', 'muted', '点画面留意见。Hark 读的就是这里：每条带时间、位置和拍点号。'));
   for (const n of [...S.doc.notes].reverse()) {
     const c = el('div', 'ncard' + (n.status === 'done' ? ' done' : '')); const m = el('div', 'm');
-    const w = el('b', '', `#${n.id.replace('N', '')} ${fmt(n.t)}`); w.onclick = () => seek(n.t); m.append(w, ` · ${n.beat} · ${n.by === 'hark' ? 'Hark' : '你'}${n.status === 'done' ? ' · 已处理' : ''}`);
+    const w = el('b', '', `#${n.id.replace('N', '')} ${fmt(n.t)}`); w.onclick = () => seek(n.t); m.append(w, ` · ${n.beat} · ${n.by === 'user' ? '你' : n.by === 'hark' ? 'Hark' : n.by}${n.status === 'done' ? ' · 已处理' : ''}`);
     c.append(m, el('div', '', n.text));
+    if (n.layer) { const lk = el('div', 'muted', `→ ${layerName(n.layer)}${n.layer.kind === 'image' ? '：' + n.layer.src : ''}（点这里去改）`); lk.style.cursor = 'pointer'; lk.onclick = () => goLayer(n.layer); c.appendChild(lk); }
     if (n.reply) c.appendChild(el('div', 'muted', 'Hark：' + n.reply));
     const a = el('div', 'row2'); a.style.marginTop = '6px';
     a.append(btn(n.status === 'done' ? '重开' : '标记处理', 'small', () => { push(); n.status = n.status === 'done' ? 'todo' : 'done'; changed(); }),
@@ -418,14 +419,26 @@ async function tts(b) {
 }
 
 // ---------- 留意见 ----------
+// 意见落到素材：点中的是字幕/小字/片名就落到那段文字，否则落到这拍的原图（交叉淡化后半段算下一拍）。和 cocut/api.py layer_at 同一套含义。
+const LAYER_NAME = { image: '原图', sub: '字幕', caption: '小字', title: '片名', title2: '副标题' };
+const layerName = (L) => L ? `${L.beat} ${LAYER_NAME[L.kind] || L.kind}` : '';
+function layerAtClick(e) {
+  const t = [...$('#ov').querySelectorAll('.t')].find((n) => { const q = n.getBoundingClientRect(); return e.clientX >= q.left - 6 && e.clientX <= q.right + 6 && e.clientY >= q.top - 6 && e.clientY <= q.bottom + 6; });   // #ov 不接鼠标，按框判断
+  const b = beatAt(S.t);
+  if (t) { const k = ['sub', 'note', 'ttl', 'ttl2'].find((c) => t.classList.contains(c)); const kind = { sub: 'sub', note: 'caption', ttl: 'title', ttl2: 'title2' }[k];
+    return { kind, beat: b.id, src: { sub: 'vo.text', caption: 'caption', title: 'vo.text', title2: 'caption' }[kind] }; }
+  const i = S.doc.beats.indexOf(b), nx = S.doc.beats[i + 1], bb = (S.xf && nx && b._e - S.t < 0.25 && 1 - (b._e - S.t) / 0.25 > 0.5) ? nx : b;
+  return { kind: 'image', beat: bb.id, src: bb.image || '' };
+}
+function goLayer(L) { if (!L) return; S.sel = L.beat; S.tab = 'beat'; const b = S.doc.beats.find((x) => x.id === L.beat); if (b && !(S.t >= b._s && S.t < b._e)) seek(b._s + 0.01); renderSide(); }
 function stageClick(e) {
-  const r = $('#stage').getBoundingClientRect(); const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  const r = $('#stage').getBoundingClientRect(); const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height; const L = layerAtClick(e);
   if (S.playing) togglePlay();
   const old = $('#composer'); if (old) old.remove();
   const c = el('div'); c.id = 'composer'; c.style.left = Math.min(e.clientX - r.left, r.width - 310) + 'px'; c.style.top = Math.min(e.clientY - r.top + 12, r.height - 150) + 'px';
-  const b = beatAt(S.t); c.appendChild(el('div', 'muted', `${fmt(S.t)} · ${b.id} · 这里怎么改？`));
+  c.appendChild(el('div', 'muted', `${fmt(S.t)} · 落在 ${layerName(L)} · 这里怎么改？`));
   const ta = el('textarea'); c.appendChild(ta); const rr = el('div', 'r');
-  rr.append(btn('取消', 'small', () => c.remove()), btn('记下', 'small primary', () => { if (ta.value.trim()) addNote({ t: +S.t.toFixed(2), x: +x.toFixed(3), y: +y.toFixed(3), beat: b.id, text: ta.value.trim() }); c.remove(); }));
+  rr.append(btn('取消', 'small', () => c.remove()), btn('记下', 'small primary', () => { if (ta.value.trim()) addNote({ t: +S.t.toFixed(2), x: +x.toFixed(3), y: +y.toFixed(3), beat: L.beat, layer: L, text: ta.value.trim() }); c.remove(); }));
   c.appendChild(rr); c.onclick = (ev) => ev.stopPropagation(); $('#stage').appendChild(c); ta.focus();
   ta.onkeydown = (ev) => { if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) rr.lastChild.click(); if (ev.key === 'Escape') c.remove(); };
 }
