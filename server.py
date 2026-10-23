@@ -7,6 +7,28 @@ ROOT = os.path.dirname(os.path.abspath(__file__)); APP = os.path.join(ROOT, 'app
 FILM = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'examples', 'lan'))
 os.environ['COCUT_FILM'] = FILM; sys.path.insert(0, os.path.join(ROOT, 'cocut')); import api, review
 JOBS = {}
+import threading
+CHECK = dict(running=False, pending=False, last=None, seconds=None, error=None, auto=os.environ.get('COCUT_REFLEX', '1') != '0'); RX = {}
+_rp = os.path.join(FILM, '.cocut', 'reflex.json')
+if os.path.exists(_rp):                                   # 服务重启后接上上次体检的时间
+    try: CHECK.update(last=time.strftime('%m-%d %H:%M', time.localtime(os.path.getmtime(_rp))), seconds=json.load(open(_rp)).get('seconds'))
+    except Exception: pass
+
+def _check_loop():
+    """后台体检：反射层（按内容哈希缓存，只重算改过的拍）→ 开复核单。保存期间又有改动就再跑一轮。"""
+    while CHECK['pending']:
+        CHECK['pending'] = False
+        try:
+            sys.path.insert(0, os.path.join(ROOT, 'tools')); import reflex
+            if 'rx' not in RX: RX['rx'] = reflex.Reflex(cache=os.path.join(FILM, '.reflex_cache'))
+            rep = reflex.check_film(FILM, os.path.join(review._dir(FILM), 'reflex.json'), RX['rx'])
+            review.open_tickets(FILM, rep); CHECK.update(last=time.strftime('%H:%M:%S'), seconds=rep['seconds'], error=None)
+        except Exception as e: CHECK['error'] = '%s: %s' % (type(e).__name__, e)
+    CHECK['running'] = False
+
+def request_check():
+    CHECK['pending'] = True
+    if not CHECK['running']: CHECK['running'] = True; threading.Thread(target=_check_loop, daemon=True).start()
 
 def doc(): return json.load(open(os.path.join(FILM, 'doc.json'), encoding='utf-8'))
 
@@ -37,11 +59,12 @@ class H(BaseHTTPRequestHandler):
         if p == '/api/plan': return self._json(api.to_plan(doc()))
         if p == '/api/review':                          # 每拍颜色 + 待复核的单；?by=gemini 去掉它答过的
             from urllib.parse import parse_qs; q = parse_qs(u.query); by = (q.get('by') or [None])[0]
-            return self._json(dict(status=review.status(FILM), open=review.list_open(FILM, by, bool(q.get('second')))))
+            return self._json(dict(status=review.status(FILM), open=review.list_open(FILM, by, bool(q.get('second'))), check=CHECK))
         if p.startswith('/api/job/'):
             j = JOBS.get(p.split('/')[-1]); return self._json(j and dict(running=j['p'].poll() is None, rc=j['p'].poll(), log=open(j['log']).read()[-3000:]) or {'error': 'no job'})
         rel = p.lstrip('/').removeprefix('live/') or 'index.html'
-        for base in (FILM, APP):                       # 片子目录优先（doc.json、素材），其次交互页
+        bases = (APP, FILM) if rel in ('index.html', 'live.js') else (FILM, APP)   # 页面本身用平台的，doc.json 和素材用片子目录的
+        for base in bases:
             f = os.path.normpath(os.path.join(base, rel))
             if f.startswith(base) and os.path.isfile(f):
                 data = open(f, 'rb').read(); self.send_response(200)
@@ -53,7 +76,11 @@ class H(BaseHTTPRequestHandler):
         p = urlparse(self.path).path; n = int(self.headers.get('Content-Length') or 0)
         try: body = json.loads(self.rfile.read(n) or b'{}')
         except Exception: return self._json({'error': 'bad json'}, 400)
-        if p in ('/live/save', '/api/save'): return self._json(*api.save(body))
+        if p in ('/live/save', '/api/save'):
+            r = api.save(body)
+            if r[1] == 200 and CHECK['auto']: request_check()      # 改一拍 → 自动重新体检、开新单
+            return self._json(*r)
+        if p == '/api/review/check': request_check(); return self._json({'ok': True, 'check': CHECK})
         if p in ('/live/tts', '/api/tts'):
             try: return self._json(*api.tts(body))
             except Exception as e: return self._json({'error': str(e)}, 500)
