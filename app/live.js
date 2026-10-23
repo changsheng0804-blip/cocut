@@ -6,7 +6,7 @@ const btn = (x, c, f, ti) => { const b = el('button', c, x); b.onclick = f; if (
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
 const MOVES = { static: '固定', push: '缓推', pan: '横移', orbit: '环绕', pull: '拉远' };
-const S = { doc: null, t: 0, playing: false, sel: null, tab: 'beat', imgs: {}, undo: [], hud: true, xf: true, safe: false,
+const S = { doc: null, t: 0, playing: false, sel: null, tab: 'beat', imgs: {}, vids: {}, liveClips: new Set(), undo: [], hud: true, xf: true, safe: false,
             audio: { ctx: null, bufs: {}, srcs: [] }, t0: 0, c0: 0, api: true, draft: null, rv: { status: {}, check: {} }, rvKey: '' };
 
 // ---------- 时间推导 ----------
@@ -71,7 +71,7 @@ function lint() {
     }
     if (b.dur < 1.8) out.push({ lvl: 'yellow', beat: b.id, msg: `只有 ${b.dur.toFixed(1)}s，画面可能看不清` });
   });
-  const noImg = bs.filter((b) => !b.image && !b.title);                    // 草稿阶段文字卡是正常的：只报一条
+  const noImg = bs.filter((b) => !b.image && !(b.clip && b.clip.file) && !b.title);                    // 草稿阶段文字卡是正常的：只报一条
   if (noImg.length) out.push({ lvl: 'info', beat: noImg[0].id, msg: `${noImg.length} 拍还是文字卡（${noImg.map((b) => b.id).join(' ')}），主线定了再逐拍换图` });
   for (const [a, z] of quietGaps()) { const b = beatAt(a);
     out.push({ lvl: 'red', beat: b.id, msg: `${fmt(a)}–${fmt(z)} 有 ${(z - a).toFixed(1)}s 几乎没声音（配乐压到 ${Math.round((b.duck ?? 1) * 100)}%，没旁白没音效），听起来像断了`,
@@ -99,6 +99,28 @@ function img(src) {
   if (!S.imgs[src]) { const i = new Image(); i.onload = () => draw(); i.src = src + '?v=' + (S.doc.rev || 1); S.imgs[src] = i; }
   return S.imgs[src].complete && S.imgs[src].naturalWidth ? S.imgs[src] : null;
 }
+// 真实渲染片段：beat.clip = {file, in?, out?, rate?}。静音播放（声音仍由 doc 的配音/音效/配乐出），image 退为海报帧。
+function vid(src) {
+  if (!S.vids[src]) { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.crossOrigin = 'anonymous';
+    v.addEventListener('seeked', () => { if (!S.playing) draw(); }); v.addEventListener('loadeddata', () => draw()); v.src = src; S.vids[src] = v; }
+  return S.vids[src];
+}
+const clipAt = (b, t) => { const c = b.clip; return Math.min(c.out ?? 1e9, (c.in || 0) + Math.max(0, t - b._s) * (c.rate || 1)); };
+// 快照模式（无头 Chrome 的虚拟时间不等视频解码）：改向服务端要这一帧（ffmpeg 抽帧），没装 ffmpeg 时退回海报帧
+const clipURL = (b, t) => `/api/clipframe?f=${encodeURIComponent(b.clip.file)}&t=${clipAt(b, t).toFixed(3)}`;
+function clipImg(u) {
+  if (!S.imgs[u]) { const i = new Image(); i.onload = () => draw(); i.src = u; S.imgs[u] = i; }
+  return S.imgs[u].complete && S.imgs[u].naturalWidth ? S.imgs[u] : null;
+}
+function clipFrame(b, t) {
+  if (S.snap) return clipImg(clipURL(b, t));
+  const v = vid(b.clip.file), at = clipAt(b, t); v._want = at;
+  if (S.playing && at < (b.clip.out ?? 1e9) - 0.05) { if (v.paused) { v.currentTime = at; v.playbackRate = b.clip.rate || 1; v.play().catch(() => {}); } else if (Math.abs(v.currentTime - at) > 0.25) v.currentTime = at; }
+  else { if (!v.paused) v.pause(); if (Math.abs(v.currentTime - at) > 0.02 && !v.seeking) v.currentTime = at; }
+  return v.readyState >= 2 ? v : null;
+}
+const titleOv = (b) => b.title && !b.title_in_image;                       // 片名已画在图里（title_in_image）→ 不叠字，当普通拍
+const titleText = (b) => b.title_text || (b.vo ? b.vo.text.split('。')[0] : '');
 const ease = (p) => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 function drawBeat(g, b, t, alpha) {
   const p = clamp((t - b._s) / b.dur, 0, 1), e = ease(p);
@@ -108,8 +130,10 @@ function drawBeat(g, b, t, alpha) {
   else if (b.move === 'pan' || b.move === 'orbit') { s = 1.08; ox = (0.5 - e) * 0.06 * 1920; }
   else s = 1 + 0.02 * p;
   g.save(); g.globalAlpha = alpha;
-  const im = img(b.image);
-  if (im) {
+  const cv = b.clip && b.clip.file ? clipFrame(b, t) : null; if (cv && cv.tagName === 'VIDEO') S.liveClips.add(cv);
+  const im = cv || img(b.image);
+  if (cv) g.drawImage(cv, 0, 0, 1920, 1080);                                // 片段自带运动，不再叠合成运镜
+  else if (im) {
     const w = 1920 * s, h = 1080 * s;
     g.drawImage(im, (1920 - w) / 2 + ox, (1080 - h) / 2, w, h);
   } else {                                   // 没图：文字卡，照样能看节奏
@@ -130,10 +154,11 @@ function wrap(g, txt, x, y, maxW, lh) {
 function draw() {
   if (!S.doc) return;
   const g = $('#cv').getContext('2d'), t = S.t, b = beatAt(t), i = S.doc.beats.indexOf(b);
-  g.fillStyle = '#000'; g.fillRect(0, 0, 1920, 1080);
+  g.fillStyle = '#000'; g.fillRect(0, 0, 1920, 1080); S.liveClips = new Set();
   drawBeat(g, b, t, 1);
   const XF = 0.25, nx = S.doc.beats[i + 1];
   if (S.xf && nx && b._e - t < XF) drawBeat(g, nx, t, 1 - (b._e - t) / XF);
+  for (const v of Object.values(S.vids)) if (!S.liveClips.has(v) && !v.paused) v.pause();
   if (S.safe) { g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2; g.strokeRect(96, 54, 1728, 972); g.strokeRect(192, 108, 1536, 864); }
   overlay(b, t);
 }
@@ -142,13 +167,13 @@ function overlay(b, t) {
   const put = (cls, txt, cy, size, extra) => { const d = el('div', 't ' + cls, txt); d.style.fontSize = size * k + 'px'; d.style.top = cy * k + 'px';
     d.style.transform = 'translate(-50%,-50%)'; Object.assign(d.style, extra || {}); ov.appendChild(d); return d; };
   const fade = (a, z, f = 0.3) => clamp(Math.min((t - a) / f, (z - t) / f), 0, 1);
-  if (b.vo && !b.title) {
+  if (b.vo && !titleOv(b)) {
     const a = b._s + b.vo.lead, z = a + b.vo.dur;
     if (t >= a && t <= z) put('sub', b.vo.text.replace(/。$/, ''), 1000, st.sub_size, { background: st.sub_plate });
   }
-  if (b.caption && !b.title) { const a = b._s + 0.5, z = b._e - 0.2; if (t >= a && t <= z) put('note', b.caption, 110, st.note_size, { opacity: 0.88 * fade(a, z) }); }
-  if (b.title && b.vo) {
-    const a = b._s + b.vo.lead; if (t >= a) put('ttl', b.vo.text.split('。')[0], st.title_y || 520, st.title_size, { opacity: clamp((t - a) / 0.4, 0, 1) });
+  if (b.caption && !titleOv(b)) { const a = b._s + 0.5, z = b._e - 0.2; if (t >= a && t <= z) put('note', b.caption, 110, st.note_size, { opacity: 0.88 * fade(a, z) }); }
+  if (titleOv(b) && titleText(b)) {
+    const a = b._s + (b.vo ? b.vo.lead : 0.3); if (t >= a) put('ttl', titleText(b), st.title_y || 520, st.title_size, { opacity: clamp((t - a) / 0.4, 0, 1) });
     if (b.caption && t >= a + 0.6) put('ttl2', b.caption, (st.title_y || 520) + 105, st.sub_size, { opacity: clamp((t - a - 0.6) / 0.5, 0, 1) });
   }
   if (S.snap && !S.marks) { $('#hud').style.display = S.hud ? '' : 'none'; $('#hud').textContent = `${b.id}  ${[b.role, b.verb].filter(Boolean).join('·')}  ${fmt(t)}`; return; }
@@ -299,6 +324,7 @@ function field(p, label, node) { const s = el('div', 'sec'); s.appendChild(el('h
 function beatPanel(p) {
   const b = selBeat() || beatAt(S.t); S.sel = b.id;
   const th = el('div', 'thumb'); if (b.image) th.style.backgroundImage = `url(${b.image}?v=${S.doc.rev})`; p.appendChild(th);
+  if (b.clip && b.clip.file) p.appendChild(el('div', 'muted', `画面：真实片段 ${b.clip.file}  ${(b.clip.in || 0).toFixed(2)}s 起${b.clip.out != null ? ' – ' + b.clip.out.toFixed(2) + 's' : ''}（不重新渲染，直接播）`));
   const r = el('div', 'row2'); r.appendChild(el('b', '', `${b.id}`)); r.appendChild(el('span', 'muted', `${fmt(b._s)}–${fmt(b._e)} · ${b.shot || ''}`)); p.appendChild(r);
   const brs = S.rv.status[b.id]; if (brs) { const q = el('div', 'rvc ' + rvCls(brs)); q.appendChild(el('div', '', '复核：' + rvLine(brs))); q.onclick = () => { S.tab = 'review'; renderSide(); }; q.style.cursor = 'pointer'; p.appendChild(q); }
   const r2 = el('div', 'row2');
@@ -421,14 +447,15 @@ async function tts(b) {
 
 // ---------- 留意见 ----------
 // 意见落到素材：点中的是字幕/小字/片名就落到那段文字，否则落到这拍的原图（交叉淡化后半段算下一拍）。和 cocut/api.py layer_at 同一套含义。
-const LAYER_NAME = { image: '原图', sub: '字幕', caption: '小字', title: '片名', title2: '副标题' };
+const LAYER_NAME = { clip: '片段', image: '原图', sub: '字幕', caption: '小字', title: '片名', title2: '副标题' };
 const layerName = (L) => L ? `${L.beat} ${LAYER_NAME[L.kind] || L.kind}` : '';
 function layerAtClick(e) {
   const t = [...$('#ov').querySelectorAll('.t')].find((n) => { const q = n.getBoundingClientRect(); return e.clientX >= q.left - 6 && e.clientX <= q.right + 6 && e.clientY >= q.top - 6 && e.clientY <= q.bottom + 6; });   // #ov 不接鼠标，按框判断
   const b = beatAt(S.t);
   if (t) { const k = ['sub', 'note', 'ttl', 'ttl2'].find((c) => t.classList.contains(c)); const kind = { sub: 'sub', note: 'caption', ttl: 'title', ttl2: 'title2' }[k];
-    return { kind, beat: b.id, src: { sub: 'vo.text', caption: 'caption', title: 'vo.text', title2: 'caption' }[kind] }; }
+    return { kind, beat: b.id, src: { sub: 'vo.text', caption: 'caption', title: b.title_text ? 'title_text' : 'vo.text', title2: 'caption' }[kind] }; }
   const i = S.doc.beats.indexOf(b), nx = S.doc.beats[i + 1], bb = (S.xf && nx && b._e - S.t < 0.25 && 1 - (b._e - S.t) / 0.25 > 0.5) ? nx : b;
+  if (bb.clip && bb.clip.file) return { kind: 'clip', beat: bb.id, src: bb.clip.file, at: +clipAt(bb, S.t).toFixed(3) };
   return { kind: 'image', beat: bb.id, src: bb.image || '' };
 }
 function goLayer(L) { if (!L) return; S.sel = L.beat; S.tab = 'beat'; const b = S.doc.beats.find((x) => x.id === L.beat); if (b && !(S.t >= b._s && S.t < b._e)) seek(b._s + 0.01); renderSide(); }
@@ -474,7 +501,7 @@ const RVNAME = (r) => ({ user: '你', reflex: '反射层' })[r] || r;
 const RVC = { green: '没问题', red: '有问题', yellow: '待复核', grey: '改过了，重新体检中' };
 function rvCls(rs) { return rs.color === 'red' && !rs.final && rs.problems.some((p) => p.against.length) ? 'red split' : rs.color; }
 function tileOf(rs) { const a = (rs.asks || []).find((x) => x.k === 'text'); return a && Number.isInteger(a.tile) && a.tile < 9 ? a.tile : null; }
-function rvDesc(p) { return ({ text: '画面里有字', swap: '不是这个场景', el: '缺：' + p.what, vo: '配音不是这句', poly: `「${p.what}」读错` })[p.k] || p.what; }
+function rvDesc(p) { if (p.what === 'expect') return '画内字有误'; return ({ text: '画面里有字', swap: '不是这个场景', el: '缺：' + p.what, vo: '配音不是这句', poly: `「${p.what}」读错` })[p.k] || p.what; }
 function rvLine(rs) {
   if (rs.color === 'red') return rs.problems.map((p) => rvDesc(p) + `（${p.by.map(RVNAME).join('、')}${p.against.length ? '；' + p.against.map(RVNAME).join('、') + ' 不同意' : ''}）`).join('；');
   if (rs.color === 'green') return '没问题（' + (rs.reviewers || ['反射层']).map(RVNAME).join('、') + '）';
@@ -548,6 +575,8 @@ async function snapMain() {
   S.t = bt ? bt._s + bt.dur / 2 : clamp(+(q('t') || 0), 0, S.len - 0.001);
   if (S.marks) await pollReview(true).catch(() => {});
   const b = beatAt(S.t), nx = S.doc.beats[S.doc.beats.indexOf(b) + 1];
+  await Promise.all([b, nx].filter((x) => x && x.clip && x.clip.file).map((x) => new Promise((ok) => { const u = clipURL(x, S.t); clipImg(u); const i = S.imgs[u];
+    if (i.complete) ok(); else { i.addEventListener('load', ok); i.addEventListener('error', ok); } })));
   await Promise.all([b, nx].filter((x) => x && x.image).map((x) => new Promise((ok) => { img(x.image); const i = S.imgs[x.image]; if (i.complete) ok(); else { i.addEventListener('load', ok); i.addEventListener('error', ok); } })));
   await document.fonts.ready; draw(); document.title = 'READY';
 }
