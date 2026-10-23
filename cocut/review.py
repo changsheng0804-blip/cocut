@@ -46,7 +46,7 @@ def asks_for(b, r):
     asks = []; ti = r.get('text_in_image') or {}; cov = r.get('coverage') or {}
     if ti.get('flag') or ti.get('score', -1) > NEAR_TEXT:
         where = TILE[ti['tile']] if isinstance(ti.get('tile'), int) and ti['tile'] < 9 else ''
-        asks.append(dict(k='text', q='画面里有没有任何可见的字母、单词或文字（包括小字、手写、编号）？' + (f'重点看{where}。' if where else '')))
+        asks.append(dict(k='text', tile=ti.get('tile'), q='画面里有没有任何可见的字母、单词或文字（包括小字、手写、编号）？' + (f'重点看{where}。' if where else '')))
     if cov.get('swap'):
         asks.append(dict(k='swap', q=f'这张图画的是不是这个场景：「{b.get("what", "")}」？'))
     else:
@@ -107,8 +107,10 @@ def answer(film, tid, by, answers, note=None):
 
 
 def verdict(t, by_reviewer):
-    """每题：说「有问题」的人数 ≥ 说「没问题」的人数且至少 1 人 → 有问题；全 unsure → 待定。"""
-    problems, unsure = [], []
+    """每题：说「有问题」的人数 ≥ 说「没问题」的人数且至少 1 人 → 有问题；全 unsure → 待定。
+    人（by=user）答过就以人为准：人是最终裁决。"""
+    problems, unsure = [], []; final = 'user' in by_reviewer
+    if final: by_reviewer = {'user': by_reviewer['user']}
     for a in t['asks']:
         bad_v = POSITIVE.get(a['k'], 'no'); good_v = 'no' if bad_v == 'yes' else 'yes'
         votes = {r: x['answers'].get(a['i'], 'unsure') for r, x in by_reviewer.items()}
@@ -117,20 +119,25 @@ def verdict(t, by_reviewer):
             problems.append(dict(k=a['k'], what=a.get('el') or a.get('ch') or a['k'], by=nb, against=ng))
         elif not nb and not ng: unsure.append(a.get('el') or a['k'])
     color = 'red' if problems else 'yellow' if unsure and len(unsure) == len(t['asks']) else 'green'
-    return dict(color=color, problems=problems, unsure=unsure, reviewers=sorted(by_reviewer))
+    return dict(color=color, problems=problems, unsure=unsure, reviewers=sorted(by_reviewer), final=final)
 
 
 def status(film):
-    """每拍当前颜色：取这一拍最新一张单。"""
+    """每拍当前颜色：取这一拍最新一张单；若 doc 里这一拍已改（指纹对不上）→ grey，等重新体检。"""
     db = _load(film); latest = {}
+    try: cur_fp = {b['id']: fingerprint(film, b) for b in json.load(open(os.path.join(film, 'doc.json'), encoding='utf-8'))['beats'] if b.get('image')}
+    except Exception: cur_fp = {}
     for t in db['tickets'].values():
         if t['status'] == 'stale': latest.setdefault(t['beat'], t); continue
         cur = latest.get(t['beat'])
         if not cur or cur['status'] == 'stale' or t['created'] >= cur['created']: latest[t['beat']] = t
     out = {}
     for bid, t in latest.items():
-        if t['status'] == 'stale': out[bid] = dict(color='grey', ticket=t['id'])
-        elif t['status'] == 'clear': out[bid] = dict(color='green', ticket=t['id'], by=['reflex'])
-        elif t['status'] == 'open': out[bid] = dict(color='yellow', ticket=t['id'], asks=len(t['asks']))
-        else: out[bid] = dict(ticket=t['id'], **verdict(t, db['answers'].get(t['id'], {})))
+        base = dict(ticket=t['id'], asks=t['asks'], answers=db['answers'].get(t['id'], {}))
+        if t['status'] == 'stale' or (bid in cur_fp and cur_fp[bid] != t['fp']): out[bid] = dict(base, color='grey'); continue
+        elif t['status'] == 'clear' and not base['answers']: out[bid] = dict(base, color='green', reviewers=['reflex'])
+        elif t['status'] == 'open': out[bid] = dict(base, color='yellow', problems=[], unsure=[])
+        else: out[bid] = dict(base, **verdict(t, base['answers']))
+    for bid in cur_fp:
+        if bid not in out: out[bid] = dict(color='grey', ticket=None, asks=[], answers={})
     return out
