@@ -43,6 +43,8 @@ def add_note(body):
              made=time.strftime('%Y-%m-%d %H:%M:%S'), t=t or 0, x=body.get('x', 0.5), y=body.get('y', 0.5), beat=beat, text=body['text'])
     for k in ('dim', 'sev', 'fix'):
         if body.get(k): n[k] = body[k]
+    if body.get('x') is not None and body.get('y') is not None:      # 点在成品帧上 → 落到对应素材
+        n['layer'] = body.get('layer') or api.layer_at(d, n['t'], float(n['x']), float(n['y'])); n['beat'] = n['layer']['beat']
     notes.append(n); d['saved'] = time.strftime('%Y-%m-%dT%H:%M:%S') + '-' + n['by']
     return api.save(d)[0] | {'note': n}, 200
 
