@@ -1,6 +1,8 @@
 # 路线
 
 ## 近期
+- [x] **文字脚本 → 预览草稿**（`cli.py new script.md 片子目录`）：配音并发、文字卡占位、配乐可省；9 拍示例 7 秒出草稿。新手示例 examples/hello。
+- [ ] 导出不依赖 Concat（试用者多数没有）：浏览器录制或 ffmpeg 拼图+混音轨。等试用反馈定。
 - [x] **反射层体检**：`tools/reflex.py`（EmbeddingGemma 2，本地，按内容哈希缓存，改一拍约 4 秒）。
 - [x] **点名复核接口**：`cocut/review.py` + `/api/review*` + `cli.py review`。反射层开单、任何 AI 只答是非题、平台按拍标红绿；素材改了旧单自动过期。实验依据见 experiments/bench/RESULTS.md 路线 D。
 - [x] 审片页按拍显示红/绿/黄/灰（时间轴色带、画面框出可疑块、「复核」面板、转成意见、你的裁决为准）；保存后服务端自动体检+开单（模型常驻，改一拍约 2 秒）。
