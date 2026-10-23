@@ -1,6 +1,7 @@
 # 给任何 AI（或人）在终端里用的最小命令行：读片子、留意见、改拍点字段。
 #   python3 cocut/cli.py show [片子目录]
 #   python3 cocut/cli.py note --beat 2c --by claude --dim 画面 --sev 2 "指针穿出表壳" --fix "指针收回表盘内"
+#   python3 cocut/cli.py note --t 24.5 --x 0.5 --y 0.93 --by gemini "字幕压住了表盘"   （看着 frame 快照点位置：自动落到那份素材，图/字幕/小字）
 #   python3 cocut/cli.py set 2c dur 4.2      （值按 JSON 解析，失败按字符串）
 # 读音（全片读音表 doc.lexicon + 拍点 vo.say 覆盖；改了读法的配音自动算过期）：
 #   python3 cocut/cli.py readings                         每拍：原文 → 实际念的，过期的标出来
@@ -16,7 +17,7 @@
 import argparse, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('args', nargs='*')
-ap.add_argument('--film', default=os.environ.get('COCUT_FILM', '.')); ap.add_argument('--beat'); ap.add_argument('--t', type=float)
+ap.add_argument('--film', default=os.environ.get('COCUT_FILM', '.')); ap.add_argument('--beat'); ap.add_argument('--t', type=float); ap.add_argument('--x', type=float); ap.add_argument('--y', type=float)
 ap.add_argument('--by', default='user'); ap.add_argument('--dim'); ap.add_argument('--sev', type=int); ap.add_argument('--fix')
 ap.add_argument('--second', action='store_true'); ap.add_argument('--py', action='append', default=[]); ap.add_argument('--note'); ap.add_argument('--clear', action='store_true'); ap.add_argument('-o', '--out'); ap.add_argument('--dir', default='.'); ap.add_argument('--hud', action='store_true'); ap.add_argument('--width', type=int, default=1920)
 a = ap.parse_intermixed_args(); os.environ['COCUT_FILM'] = os.path.abspath(a.film); import api
@@ -38,6 +39,8 @@ elif a.cmd == 'note':
             s += b['dur']
     for k in ('dim', 'sev', 'fix'):
         if getattr(a, k) is not None: n[k] = getattr(a, k)
+    if a.x is not None and a.y is not None:                            # 看着快照点的位置 → 落到对应素材
+        n.update(x=a.x, y=a.y); n['layer'] = api.layer_at(d, n['t'], a.x, a.y); n['beat'] = n['layer']['beat']; print('落在：', n['layer'])
     d['notes'].append(n); save(a.by)
 elif a.cmd == 'set':
     bid, key, val = a.args[0], a.args[1], ' '.join(a.args[2:])
