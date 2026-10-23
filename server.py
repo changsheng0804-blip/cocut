@@ -1,6 +1,6 @@
 # cocut 本地服务：把「片子目录」（doc.json + 素材）和交互页 app/ 一起端出来，并提供人和 AI 共用的接口。
 # 用法：python3 server.py <片子目录> [端口]      例：python3 server.py examples/lan 8790
-import json, os, sys, time, subprocess, mimetypes
+import json, os, sys, time, subprocess, mimetypes, threading
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, unquote
 ROOT = os.path.dirname(os.path.abspath(__file__)); APP = os.path.join(ROOT, 'app')
@@ -57,6 +57,16 @@ class H(BaseHTTPRequestHandler):
         if p == '/api/plan': return self._json(api.to_plan(doc()))
         if p == '/api/review':                          # 转发 cocheck：每拍颜色、体检/复核员状态
             return self._json(*cocheck('/status'))
+        if p in ('/api/frame', '/live/frame'):          # 画面快照：?t=12.3 或 ?beat=2c [&hud=1&marks=1&xf=0&width=960] → PNG
+            import snap, tempfile
+            from urllib.parse import parse_qs
+            q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            if 't' not in q and 'beat' not in q: return self._json({'error': 't or beat required'}, 400)
+            out = os.path.join(tempfile.gettempdir(), 'cocut-frame-%d.png' % threading.get_ident())
+            try: snap.shot('http://127.0.0.1:%d' % self.server.server_port, out, q.get('t'), q.get('beat'), q.get('hud') == '1', q.get('marks') == '1', q.get('xf') != '0', int(q.get('width') or 1920))
+            except Exception as e: return self._json({'error': str(e)}, 500)
+            data = open(out, 'rb').read(); os.remove(out); self.send_response(200); self.send_header('Content-Type', 'image/png')
+            self.send_header('Cache-Control', 'no-store'); self.send_header('Content-Length', len(data)); self.end_headers(); return self.wfile.write(data)
         if p.startswith('/api/job/'):
             j = JOBS.get(p.split('/')[-1]); return self._json(j and dict(running=j['p'].poll() is None, rc=j['p'].poll(), log=open(j['log']).read()[-3000:]) or {'error': 'no job'})
         rel = p.lstrip('/').removeprefix('live/') or 'index.html'
