@@ -15,7 +15,7 @@ L = t; n = int(L * SR) + 1; mix = np.zeros((n, 2), np.float32)
 def put(buf, start, gain):
     i = int(round(start * SR)); j0 = max(0, -i); i = max(0, i); k = min(n - i, len(buf) - j0)
     if k > 0: mix[i:i + k] += buf[j0:j0 + k] * gain
-m = d['music']; mb = load(os.path.join(film, m['file']))
+m = d.get('music') or {}; mb = load(os.path.join(film, m['file'])) if m.get('file') else np.zeros((n, 2), np.float32)   # 配乐可以没有
 if len(mb) < n: mb = np.tile(mb, (n // len(mb) + 1, 1))
 mb = mb[:n]; tt = np.arange(n) / SR
 k = np.clip(np.minimum(tt / max(m.get('fade_in', 0.01), 1e-3), (L - tt) / max(m.get('fade_out', 0.01), 1e-3)), 0, 1)
