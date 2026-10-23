@@ -62,8 +62,9 @@ for b in plan['beats']:
         C('keyframe_set', {'path': PROJ, 'clipId': cid, 'property': 'offsetX', 'at': 1, 'value': -0.03})
     b['clip'] = cid
 # 声音
-mus = add(plan['music']['file'], 0, END)
-C('clip_update', {'path': PROJ, 'clipId': mus, 'patch': {'volume': plan['music']['gain'], 'fadeOut': plan['music']['fade_out'], 'fadeIn': 0.5}})
+if plan['music'].get('file'):                     # 配乐可以没有
+    mus = add(plan['music']['file'], 0, END)
+    C('clip_update', {'path': PROJ, 'clipId': mus, 'patch': {'volume': plan['music']['gain'], 'fadeOut': plan['music']['fade_out'], 'fadeIn': 0.5}})
 for v in plan['vo']:
     vc = add(v['file'], v['start'])
     if plan.get('vo_gain', 1) != 1: C('clip_update', {'path': PROJ, 'clipId': vc, 'patch': {'volume': plan['vo_gain']}})
