@@ -17,6 +17,7 @@
    或 `cli.py review answer 3b-8e6abd7068 --by <你的名字> '{"0":"no"}'`。
 3. 只看点名的那一处，不评价别的；看不到/听不到就答 `unsure`，不要猜。
 4. 单子过期（409）说明素材或文案已改，等新体检出新单。
+自动领单：`python3 tools/reviewer.py --server http://localhost:8790 --by <名字> --cmd '<你的命令行> {prompt}'`，适配器负责下载图/音、出题、收答案、交回。
 想要更全面的意见，照旧用 `/api/note` 留言；复核单只做是非判断。
 
 ## 规矩
