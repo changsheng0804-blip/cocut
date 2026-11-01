@@ -1,4 +1,5 @@
 # 渲染后端（Concat headless MCP）：plan.json -> Concat 工程 -> 审片版 480p（叠拍点号）或 --final 1080p。
+# 声音默认用 tools/mixdown.py 的成品音轨（含 duck，与审片页一致）；COCUT_CONCAT_MIX=separate 走分轨。
 # 用法：COCUT_FILM=片子目录 python3 render/concat.py [版本号] [--final]
 import json, os, sys, subprocess, shutil, time
 HERE = os.path.abspath(os.environ.get('COCUT_FILM') or os.getcwd()); os.chdir(HERE)
@@ -61,14 +62,25 @@ for b in plan['beats']:
         C('keyframe_set', {'path': PROJ, 'clipId': cid, 'property': 'offsetX', 'at': 0, 'value': 0.03})
         C('keyframe_set', {'path': PROJ, 'clipId': cid, 'property': 'offsetX', 'at': 1, 'value': -0.03})
     b['clip'] = cid
-# 声音
-if plan['music'].get('file'):                     # 配乐可以没有
+# 声音：默认铺一条 tools/mixdown.py 的成品音轨（和审片页同一套规则，含 duck），导出声音与页面一致。
+# COCUT_CONCAT_MIX=separate 退回旧做法：配乐/旁白/音效各自摆进 Concat（没有 duck）。
+def mixdown():
+    if os.environ.get('COCUT_CONCAT_MIX') == 'separate' or not os.path.exists(os.path.join(HERE, 'doc.json')): return None
+    out = os.path.join(HERE, 'review' if not FINAL else '.', '_mixdown.wav'); os.makedirs(os.path.dirname(out), exist_ok=True)
+    tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools', 'mixdown.py')
+    r = subprocess.run([sys.executable, tool, HERE, out], capture_output=True, text=True)
+    if r.returncode: print('mixdown 失败，退回分轨：', (r.stderr or r.stdout)[-300:]); return None
+    print('mixdown', r.stdout.strip()); return os.path.relpath(out, HERE)
+MIX = mixdown()
+if MIX:
+    add(MIX, 0, END)
+elif plan['music'].get('file'):                     # 配乐可以没有
     mus = add(plan['music']['file'], 0, END)
     C('clip_update', {'path': PROJ, 'clipId': mus, 'patch': {'volume': plan['music']['gain'], 'fadeOut': plan['music']['fade_out'], 'fadeIn': 0.5}})
-for v in plan['vo']:
+for v in ([] if MIX else plan['vo']):
     vc = add(v['file'], v['start'])
     if plan.get('vo_gain', 1) != 1: C('clip_update', {'path': PROJ, 'clipId': vc, 'patch': {'volume': plan['vo_gain']}})
-for x in plan.get('sfx', []):
+for x in ([] if MIX else plan.get('sfx', [])):
     xc = add(x['file'], x['start'])
     if x.get('gain', 1) != 1: C('clip_update', {'path': PROJ, 'clipId': xc, 'patch': {'volume': x['gain']}})
 # 字
