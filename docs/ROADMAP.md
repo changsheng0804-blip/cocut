@@ -19,11 +19,11 @@
 - [ ] 云端大模型领单、MCP 工具（在 cocheck 里做）。
 - [x] **读音**（《懒》N13，issue #1）：全片读音表 `doc.lexicon` 自动套用、单拍 `vo.say` 覆盖、`vo.said` 记录实际念的、读法变了配音自动算过期；界面「读音」面板和拍点「读法」框；`cli.py readings / lex / say / voice stale`；拼音要求经 cocheck 交复核员核对。
 - [x] **4a 音频出错排查**（《懒》N14，已修复）：`tools/mixdown.py` 离线混音后定位为 duck=0 造成 55.0–56.6 秒纯数字静音，改 duck 0.12 + 急停音余尾。
-- [ ] **导出端直接用 mixdown 音轨**：render/concat.py 不再自己摆配乐/旁白/音效，改为铺一条 mixdown.py 生成的成品音轨，浏览器与导出声音完全一致，顺带解决导出端 duck。
+- [x] **导出端直接用 mixdown 音轨**（2026-11-01：render/concat.py 默认铺 mixdown 成品音轨，与审片页相关 0.9999；COCUT_CONCAT_MIX=separate 退回分轨）：render/concat.py 不再自己摆配乐/旁白/音效，改为铺一条 mixdown.py 生成的成品音轨，浏览器与导出声音完全一致，顺带解决导出端 duck。
 - [ ] **静音检查**：对 mixdown 结果扫整片，任何超过 0.5 秒低于 -60 dB 的段落即报警（进页面的问题清单和 CLI）。
 - [ ] MCP 服务：把 /api/* 包成 MCP 工具，让任一支持 MCP 的 AI 客户端直接接入。
 - [x] 画面快照接口（#4）：`GET /api/frame?t=|beat=`、`cli.py frame`、`cocut/snap.py`；无头 Chrome 打开审片页快照模式（`#snap`），和人看到的是同一帧。
-- [ ] Concat 导出端支持配乐 duck（目前只有浏览器端支持；可由「导出端直接用 mixdown 音轨」一并解决）。
+- [x] Concat 导出端支持配乐 duck（目前只有浏览器端支持；可由「导出端直接用 mixdown 音轨」一并解决）。
 - [ ] 意见面板里显示 by（谁留的），按参与者过滤。
 
 ## 中期
