@@ -60,7 +60,9 @@ textarea { width:100%; resize:vertical; } input[type=number] { width:80px; }
 .cell.sel { box-shadow:inset 0 0 0 3px var(--acc); } .cell.hero::before { content:'★'; position:absolute; right:5px; bottom:2px; color:var(--warm); font-size:13px; }
 .cell.bad::after { content:''; position:absolute; left:0; right:0; bottom:0; height:4px; background:var(--red); }
 .cell .h { position:absolute; right:-2px; top:0; bottom:0; width:10px; cursor:ew-resize; z-index:2; }
-.cell.drop { box-shadow:inset 4px 0 0 var(--warm); }
+#tl, .cell, .vo { touch-action:none; }
+#rowBeats.reordering .cell { transition:left .15s ease; } #rowBeats .cell.dragging { transition:none; z-index:5; opacity:.85; box-shadow:0 0 0 2px var(--warm), 0 6px 18px #000a; cursor:grabbing; }
+@media (pointer:coarse) { .cell .h { width:22px; right:-8px; } }
 #rowVo { position:relative; height:30px; margin-top:6px; }
 .vo { position:absolute; top:4px; height:22px; border-radius:6px; background:#5b4a2a; border:1px solid #9a7b40; font-size:11px; line-height:20px; padding:0 6px; white-space:nowrap; overflow:hidden; }
 .vo.stale { background:#5a2a2a; border-color:#c06060; } .vo i { position:absolute; top:15px; width:1px; height:5px; background:#e8c98a; }
