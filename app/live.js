@@ -262,8 +262,8 @@ function renderTL() {
     c.appendChild(el('div', 'nm', `${b.id} ${b.verb || ''}`));
     const rs = S.rv.status[b.id]; if (rs) { const r = el('div', 'rv ' + rvCls(rs)); c.title = `${b.id}：${rvLine(rs)}`; c.appendChild(r); }
     const h = el('div', 'h'); c.appendChild(h);
-    h.onmousedown = (e) => { e.stopPropagation(); resizeDrag(e, b); };
-    c.onmousedown = (e) => { if (e.target === h) return; S.sel = b.id; S.tab = 'beat'; reorderDrag(e, b); };
+    h.onpointerdown = (e) => { e.stopPropagation(); e.preventDefault(); resizeDrag(e, b); };
+    c.onpointerdown = (e) => { if (e.target === h) return; e.preventDefault(); S.sel = b.id; S.tab = 'beat'; reorderDrag(e, b, c); };
     rb.appendChild(c);
   });
   const rv = $('#rowVo'); rv.querySelectorAll('.vo').forEach((x) => x.remove());
@@ -271,7 +271,7 @@ function renderTL() {
     const v = el('div', 'vo' + (voStale(b) ? ' stale' : ''), b.vo.text); const a = b._s + b.vo.lead;
     v.style.left = X(a) + 'px'; v.style.width = X(b.vo.dur) + 'px'; v.title = b.vo.text;
     for (const w of b.vo.words || []) { const i = el('i'); i.style.left = X(w.t) + 'px'; v.appendChild(i); }
-    v.onmousedown = (e) => { e.stopPropagation(); S.sel = b.id; leadDrag(e, b); }; rv.appendChild(v);
+    v.onpointerdown = (e) => { e.stopPropagation(); e.preventDefault(); S.sel = b.id; leadDrag(e, b); }; rv.appendChild(v);
   }
   const ra = $('#rowAux'); ra.querySelectorAll('.aux').forEach((x) => x.remove());
   for (const b of S.doc.beats) if (b.caption) {
@@ -283,32 +283,45 @@ function renderTL() {
   placePH();
 }
 function placePH() { $('#ph').style.left = X(S.t) + 'px'; }
+// 拖拽统一走 pointer 事件：鼠标、触屏、触控笔同一套
+function drag(mv, up) {
+  const m = (ev) => { ev.preventDefault(); mv(ev); };
+  const u = (ev) => { removeEventListener('pointermove', m); removeEventListener('pointerup', u); removeEventListener('pointercancel', u); up(ev, ev.type === 'pointercancel'); };
+  addEventListener('pointermove', m, { passive: false }); addEventListener('pointerup', u); addEventListener('pointercancel', u);
+}
 function resizeDrag(e, b) {
   push(); const x0 = e.clientX, d0 = b.dur;
-  const mv = (ev) => { b.dur = +Math.max(0.5, d0 + T(ev.clientX - x0)).toFixed(2); changed(true); };
-  const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); changed(); };
-  addEventListener('mousemove', mv); addEventListener('mouseup', up);
+  drag((ev) => { b.dur = +Math.max(0.5, d0 + T(ev.clientX - x0)).toFixed(2); changed(true); }, () => changed());
 }
 function leadDrag(e, b) {
   push(); const x0 = e.clientX, l0 = b.vo.lead;
-  const mv = (ev) => { b.vo.lead = +clamp(l0 + T(ev.clientX - x0), 0, b.dur - 0.2).toFixed(2); changed(true); };
-  const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); changed(); };
-  addEventListener('mousemove', mv); addEventListener('mouseup', up);
+  drag((ev) => { b.vo.lead = +clamp(l0 + T(ev.clientX - x0), 0, b.dur - 0.2).toFixed(2); changed(true); }, () => changed());
 }
-function reorderDrag(e, b) {            // 点一下 = 选中并跳到这拍；横向拖 = 换位置
-  const x0 = e.clientX; let moved = false, target = null;
-  const mv = (ev) => {
-    if (Math.abs(ev.clientX - x0) > 8) moved = true; if (!moved) return;
-    const t = T(ev.clientX - $('#tl').getBoundingClientRect().left);
-    target = S.doc.beats.find((x) => t >= x._s && t < x._e);
-    document.querySelectorAll('.cell').forEach((c, i) => c.classList.toggle('drop', S.doc.beats[i] === target && target !== b));
+// 点一下 = 选中并跳到这拍；横向拖 = 换位置。拖动时其余拍点实时让位（落点预览），可拖到最前或最后。
+function dropIndex(bs, b, t) {        // 拖动拍点中心落在时间 t → 插到其余拍点中的第几位
+  const rest = bs.filter((x) => x !== b); let acc = 0;
+  for (let i = 0; i < rest.length; i++) { if (t < acc + rest[i].dur / 2) return i; acc += rest[i].dur; }
+  return rest.length;
+}
+function reorderDrag(e, b, c) {
+  const bs = S.doc.beats, x0 = e.clientX, r = $('#tl').getBoundingClientRect(), grab = T(e.clientX - r.left) - b._s;
+  const cells = [...document.querySelectorAll('#rowBeats .cell')]; let moved = false, k = bs.indexOf(b);
+  const lay = (k) => {               // 预览布局：其余拍点按新顺序排开，空出 b 的位置
+    const rest = bs.filter((x) => x !== b), order = [...rest.slice(0, k), b, ...rest.slice(k)]; let t = 0;
+    for (const x of order) { if (x !== b) cells[bs.indexOf(x)].style.left = X(t) + 'px'; t += x.dur; }
   };
-  const up = () => {
-    removeEventListener('mousemove', mv); removeEventListener('mouseup', up);
-    if (moved && target && target !== b) { push(); const bs = S.doc.beats; bs.splice(bs.indexOf(b), 1); bs.splice(bs.indexOf(target), 0, b); changed(); toast(`${b.id} 移到 ${target.id} 前面`); }
+  drag((ev) => {
+    if (!moved && Math.abs(ev.clientX - x0) <= 8) return;
+    if (!moved) { moved = true; $('#rowBeats').classList.add('reordering'); c.classList.add('dragging'); }
+    const s0 = clamp(T(ev.clientX - r.left) - grab, 0, S.len - b.dur);
+    c.style.left = X(s0) + 'px'; k = dropIndex(bs, b, s0 + b.dur / 2); lay(k);
+  }, (ev, cancel) => {
+    $('#rowBeats').classList.remove('reordering');
+    const from = bs.indexOf(b);
+    if (moved && !cancel && k !== from) { push(); bs.splice(from, 1); bs.splice(k, 0, b); changed(); toast(k === 0 ? `${b.id} 移到最前` : k === bs.length - 1 ? `${b.id} 移到最后` : `${b.id} 移到 ${bs[k + 1].id} 前面`); }
+    else if (moved) renderTL();
     else { seek(b._s + 0.01); renderAll(); }
-  };
-  addEventListener('mousemove', mv); addEventListener('mouseup', up);
+  });
 }
 
 // ---------- 右侧面板 ----------
@@ -593,9 +606,8 @@ async function main() {
   $('#stage').onclick = stageClick; $('#bPlay').onclick = togglePlay; $('#bUndo').onclick = undo; $('#bExport').onclick = exportFilm;
   const tog = (id, k) => { $(id).onclick = () => { S[k] = !S[k]; $(id).classList.toggle('on', S[k]); frame(); }; };
   tog('#bHud', 'hud'); tog('#bXf', 'xf'); tog('#bSafe', 'safe');
-  $('#tl').onmousedown = (e) => { if (e.target.closest('.cell,.vo')) return; const r = $('#tl').getBoundingClientRect(); seek(T(e.clientX - r.left));
-    const mv = (ev) => seek(T(ev.clientX - r.left)); const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); };
-    addEventListener('mousemove', mv); addEventListener('mouseup', up); };
+  $('#tl').onpointerdown = (e) => { if (e.target.closest('.cell,.vo')) return; e.preventDefault(); const r = $('#tl').getBoundingClientRect(); seek(T(e.clientX - r.left));
+    drag((ev) => seek(T(ev.clientX - r.left)), () => {}); };
   addEventListener('keydown', (e) => {
     if (e.target.matches('input,textarea,select')) return;
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
